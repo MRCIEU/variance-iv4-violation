@@ -3,9 +3,10 @@ library("dplyr")
 library("TwoSampleMR")
 set.seed(1234)
 
-n_obs <- 1000
+n_obs <- 10000
 n_sim <- 1000
-b <- .5
+b <- .5 # causal effect
+phi <- 2
 
 bp <- function(x, y){
     fit1 <- lm(y ~ x)
@@ -21,13 +22,13 @@ bp <- function(x, y){
 results <- data.frame()
 for (i in 1:n_sim){
     # simulate effects
-    b_exp <- .5
-    b_out <- b * b_exp
-    z <- rbinom(n_obs, 2, .4)
-    w <- rnorm(n_obs)
-    u <- rnorm(n_obs)
-    x <- z*b_exp + w*.2 + z*u*b_exp + rnorm(n_obs)
-    y <- z*b_out + w*.4 + z*u*b_out + rnorm(n_obs)
+    b_exp <- .835 # IV-exp effect explains 5% variation in X
+    b_out <- b * b_exp # IV-out effect
+    z <- rbinom(n_obs, 2, .4) # IV
+    w <- rnorm(n_obs) # confounder
+    u <- rnorm(n_obs) # modifier
+    x <- z*b_exp + w*b_exp*2 + z*u*b_exp*phi + rnorm(n_obs) # exposure
+    y <- z*b_out + w*b_out*2 + z*u*b_out*phi + rnorm(n_obs) # outcome
 
     # estimate SNP effects
     exp_fit <- lm(x ~ z)
@@ -35,7 +36,11 @@ for (i in 1:n_sim){
 
     # check IV1
     exp_p <- exp_fit %>% tidy %>% pull(p.value) %>% nth(2)
-    stopifnot(exp_p < 5e-8)
+    exp_r2 <- exp_fit %>% summary %>% .[["r.squared"]]
+
+    if (exp_p > 5e-8){
+        next
+    }
 
     # estimate MR effect
     mr <- mr_wald_ratio(
@@ -45,5 +50,14 @@ for (i in 1:n_sim){
         out_fit %>% tidy %>% pull(std.error) %>% nth(2)
     )
 
-    results <- rbind(results, as.data.frame(mr))
+    res <- as.data.frame(mr)
+    res$bp <- bp(z, x)
+    res$exp_p <- exp_p
+    res$exp_r2 <- exp_r2
+    results <- rbind(results, res)
 }
+
+# check casual estimate is similar to effect
+t.test(results$b, mu=b)
+t.test(results$bp)
+t.test(results$exp_r2)
