@@ -26,7 +26,7 @@ for (i in 1:n_sim){
     b_out <- b * b_exp # IV-out effect
     z <- rbinom(n_obs, 2, .4) # IV
     w <- rnorm(n_obs) # confounder
-    u <- rnorm(n_obs) # modifier
+    u <- rbinom(n_obs, 1, .5) # modifier
     x <- z*b_exp + w*b_exp*2 + z*u*b_exp*phi + rnorm(n_obs) # exposure
     y <- z*b_out + w*b_out*2 + z*u*b_out*phi + rnorm(n_obs) # outcome
 
