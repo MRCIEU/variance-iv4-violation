@@ -48,9 +48,9 @@ for (pb in seq(0.2, 1, 0.2)){
 # surface plot
 # plot coef 1 vs 2 and then use MR point estimate SD
 pdf("plot.pdf")
-ggplot(results, aes(x=phi_p, y=b_mr)) +
+ggplot(results, aes(x=-log10(phi_p), y=b_mr)) +
   geom_point(alpha=0.7) +
-  facet_grid(~ pb) +
+  facet_grid(~ pb, scale="free_x") +
   labs(x="Variance test -log10(P)", y="MR point estimate") +
   theme_classic()
 dev.off()
