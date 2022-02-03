@@ -5,7 +5,7 @@ library("ggplot2")
 set.seed(123)
 
 n_sim <- 200
-n_obs <- 1000
+n_obs <- 10000
 
 #' Function to simulate genotypes in HWE
 #' @param q Recessive/alternative allele frequency
@@ -48,7 +48,7 @@ for (pb in seq(0.2, 1, 0.2)){
 # surface plot
 # plot coef 1 vs 2 and then use MR point estimate SD
 pdf("plot.pdf")
-ggplot(results, aes(x=-log10(phi_p), y=b_mr)) +
+ggplot(results, aes(x=phi_p, y=b_mr)) +
   geom_point(alpha=0.7) +
   facet_grid(~ pb) +
   labs(x="Variance test -log10(P)", y="MR point estimate") +
