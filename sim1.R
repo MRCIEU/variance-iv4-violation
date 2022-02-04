@@ -17,9 +17,10 @@ for (pb in seq(0.2, 1, 0.2)){
   for (i in 1:n_sim){
       c <- rnorm(n_obs)
       z <- get_simulated_genotypes(0.25, n_obs)
-      u <- rbinom(n_obs, 2, pb)
+      u <- rbinom(n_obs, 1, pb) # should be binary
       x <- z*u + c + rnorm(n_obs)
-      y <- x + c + rnorm(n_obs)
+      #UX and UY are independent will see difference
+      y <- x*u + c + rnorm(n_obs)
       exp_fit <- lm(x ~ z)
       b_exp <- exp_fit %>% tidy %>% dplyr::filter(term == "z") %>% dplyr::select("estimate") %>% as.numeric
       f_exp <- summary(exp_fit)$fstatistic[['value']]
