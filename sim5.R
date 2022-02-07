@@ -2,11 +2,21 @@ library("dplyr")
 library("broom")
 library("varGWASR")
 library("ggplot2")
+library("GWASTools")
 source("funs.R")
 set.seed(123)
 
 n_sim <- 1000
 n_obs <- 10000
+
+# Paper
+# 1. Bias and coverage of MR estimates under varying IV4 violation
+# 2. Power and T1E to detect #1 using variance test
+# 3. Applied example; for positives compare with IV strength among covariates
+# 4. Hypothesis-free application?
+
+# Hartwig et al does bias, coverage, rejection rate
+# compare with IV strength among strata of measured covariates
 
 # Z-X homogeneity
 # X-Y homogeneity
@@ -101,9 +111,27 @@ results3$sim <- 3
 results4$sim <- 4
 results5$sim <- 5
 results <- rbind(
-    results1,results2,results3,results4,results5
+    results1,results2,results3,results4,results5,results6
 )
 
-# plots
-#qqPlot(results$phi_p.zx)
-#qqPlot(results$phi_p.zy)
+# ACE mean bias & 95% CI
+
+# ACE 95% CI coverage
+
+# T1E of variance test
+
+save_qq <- function(p, file){
+  pdf(file)
+  qqPlot(p)
+  dev.off()
+}
+save_qq(results %>% dplyr::filter(sim==1) %>% dplyr::pull(phi_p.zx), "zx_sim1.pdf")
+save_qq(results %>% dplyr::filter(sim==1) %>% dplyr::pull(phi_p.zy), "zy_sim1.pdf")
+save_qq(results %>% dplyr::filter(sim==2) %>% dplyr::pull(phi_p.zx), "zx_sim2.pdf")
+save_qq(results %>% dplyr::filter(sim==2) %>% dplyr::pull(phi_p.zy), "zy_sim2.pdf")
+save_qq(results %>% dplyr::filter(sim==3) %>% dplyr::pull(phi_p.zx), "zx_sim3.pdf")
+save_qq(results %>% dplyr::filter(sim==3) %>% dplyr::pull(phi_p.zy), "zy_sim3.pdf")
+save_qq(results %>% dplyr::filter(sim==4) %>% dplyr::pull(phi_p.zx), "zx_sim4.pdf")
+save_qq(results %>% dplyr::filter(sim==4) %>% dplyr::pull(phi_p.zy), "zy_sim4.pdf")
+save_qq(results %>% dplyr::filter(sim==5) %>% dplyr::pull(phi_p.zx), "zx_sim5.pdf")
+save_qq(results %>% dplyr::filter(sim==5) %>% dplyr::pull(phi_p.zy), "zy_sim5.pdf")
