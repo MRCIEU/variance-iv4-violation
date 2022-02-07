@@ -2,6 +2,7 @@ library("dplyr")
 library("broom")
 library("varGWASR")
 library("ggplot2")
+library("TwoSampleMR")
 library("GWASTools")
 source("funs.R")
 set.seed(123)
@@ -61,7 +62,7 @@ for (pb in seq(0.5, 0.5)){
       z <- get_simulated_genotypes(0.25, n_obs)
       u <- rbinom(n_obs, 1, pb)
       x <- z + c + rnorm(n_obs)
-      y <- x + x*u + c + rnorm(n_obs)
+      y <- x*0.5 + x*u + c + rnorm(n_obs)
       result <- get_est(z, x, y)
       result$pb <- pb
       results3 <- rbind(results3, result)
@@ -79,7 +80,7 @@ for (pb in seq(0.5, 0.5)){
       z <- get_simulated_genotypes(0.25, n_obs)
       u <- rbinom(n_obs, 1, pb)
       x <- z + z*u + c + rnorm(n_obs)
-      y <- x + x*u + c + rnorm(n_obs)
+      y <- x*0.5 + x*u + c + rnorm(n_obs)
       result <- get_est(z, x, y)
       result$pb <- pb
       results4 <- rbind(results4, result)
@@ -97,7 +98,7 @@ for (pb in seq(0.5, 0.5)){
       u1 <- rbinom(n_obs, 1, pb)
       u2 <- rbinom(n_obs, 1, pb)
       x <- z + z*u1 + c + rnorm(n_obs)
-      y <- x + x*u2 + c + rnorm(n_obs)
+      y <- x*.5 + x*u2 + c + rnorm(n_obs)
       result <- get_est(z, x, y)
       result$pb <- pb
       results5 <- rbind(results5, result)
@@ -111,15 +112,21 @@ results3$sim <- 3
 results4$sim <- 4
 results5$sim <- 5
 results <- rbind(
-    results1,results2,results3,results4,results5,results6
+    results1,results2,results3,results4,results5
 )
 
 # ACE mean bias & 95% CI
+mr_mean <- results %>% dplyr::group_by(sim) %>% dplyr::summarize(t.test(b_mr) %>% tidy)
+pdf("bias.pdf")
+ggplot(mr_mean, aes(x=sim, y=estimate, ymin=conf.low, ymax=conf.high)) +
+    geom_point() + geom_errorbar(width=.05) + theme_classic() + geom_hline(yintercept=1, linetype="dashed", color="grey") +
+    labs(y="Average causal estimate (95% CI)",x="Scenario")
+dev.off()
 
 # ACE 95% CI coverage
 
-# T1E of variance test
 
+# T1E of variance test
 save_qq <- function(p, file){
   pdf(file)
   qqPlot(p)

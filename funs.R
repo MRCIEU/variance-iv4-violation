@@ -14,9 +14,14 @@ get_simulated_genotypes <- function(q, n_obs){
 get_est <- function(z, x, y){
     exp_fit <- lm(x ~ z)
     b_exp <- exp_fit %>% tidy %>% dplyr::filter(term == "z") %>% dplyr::select("estimate") %>% as.numeric
+    b_exp <- exp_fit %>% tidy %>% dplyr::filter(term == "z") %>% dplyr::select("std.error") %>% as.numeric
     f_exp <- summary(exp_fit)$fstatistic[['value']]
-    b_out <- lm(y ~ z) %>% tidy %>% dplyr::filter(term == "z") %>% dplyr::select("estimate") %>% as.numeric
-    b_mr <- b_out/b_exp
+    out_fit <- lm(y ~ z)
+    b_out <- out_fit %>% tidy %>% dplyr::filter(term == "z") %>% dplyr::select("estimate") %>% as.numeric
+    se_out <- out_fit %>% tidy %>% dplyr::filter(term == "z") %>% dplyr::select("std.error") %>% as.numeric
+    mr <- TwoSampleMR::mr_wald_ratio(b_exp, b_out, se_exp, se_out, NULL)
+    b_mr <- mr$b
+    se_mr <- mr$se
     b_obs <- lm(y ~ x) %>% tidy %>% dplyr::filter(term == "x") %>% dplyr::select("estimate") %>% as.numeric
     fit1 <- varGWASR::model(data.frame(z,x), "z", "x")
     names(fit1) <- paste0(names(fit1), ".zx")
@@ -24,6 +29,7 @@ get_est <- function(z, x, y){
     names(fit2) <- paste0(names(fit2), ".zy")
     fit <- cbind(fit1, fit2)
     fit$b_mr <- b_mr
+    fit$se_mr <- se_mr
     fit$b_obs <- b_obs
     fit$lin_var <- var(x[z==2]) - var(x[z==0])
     fit$f_exp <- f_exp
