@@ -115,7 +115,7 @@ results <- rbind(
     results1,results2,results3,results4,results5
 )
 
-# ACE mean bias & 95% CI
+# ACE bias
 mr_mean <- results %>% dplyr::group_by(sim) %>% dplyr::summarize(t.test(b_mr) %>% tidy)
 pdf("bias.pdf")
 ggplot(mr_mean, aes(x=sim, y=estimate, ymin=conf.low, ymax=conf.high)) +
@@ -123,8 +123,17 @@ ggplot(mr_mean, aes(x=sim, y=estimate, ymin=conf.low, ymax=conf.high)) +
     labs(y="Average causal estimate (95% CI)",x="Scenario")
 dev.off()
 
-# ACE 95% CI coverage
+# ACE coverage
+results$lci <- results$b_mr - (results$se_mr * 1.96)
+results$uci <- results$b_mr + (results$se_mr * 1.96)
+results$h1 <- (results$lci <= 1 & results$uci >= 1)
+ci <- results %>% dplyr::group_by(sim) %>% dplyr::summarize(binom.test(sum(h1), n()) %>% tidy)
 
+pdf("coverage.pdf")
+ggplot(ci, aes(x=sim, y=estimate, ymin=conf.low, ymax=conf.high)) +
+    geom_point() + geom_errorbar(width=.05) + theme_classic() + geom_hline(yintercept=0.95, linetype="dashed", color="grey") +
+    labs(y="Causal estimate coverage (95% CI)",x="Scenario")
+dev.off()
 
 # T1E of variance test
 save_qq <- function(p, file){
@@ -142,3 +151,11 @@ save_qq(results %>% dplyr::filter(sim==4) %>% dplyr::pull(phi_p.zx), "zx_sim4.pd
 save_qq(results %>% dplyr::filter(sim==4) %>% dplyr::pull(phi_p.zy), "zy_sim4.pdf")
 save_qq(results %>% dplyr::filter(sim==5) %>% dplyr::pull(phi_p.zx), "zx_sim5.pdf")
 save_qq(results %>% dplyr::filter(sim==5) %>% dplyr::pull(phi_p.zy), "zy_sim5.pdf")
+
+# -log10 MR P value mean and SD
+pvals <- results %>% dplyr::group_by(sim) %>% dplyr::summarize(t.test(-log10(p_mr)) %>% tidy)
+pdf("mr_pval.pdf")
+ggplot(pvals, aes(x=sim, y=estimate, ymin=conf.low, ymax=conf.high)) +
+    geom_point() + geom_errorbar(width=.05) + theme_classic() + geom_hline(yintercept=0.95, linetype="dashed", color="grey") +
+    labs(y="Causal estimate P value (95% CI)",x="Scenario")
+dev.off()
