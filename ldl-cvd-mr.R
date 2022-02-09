@@ -18,7 +18,7 @@ mr_scatter_var_plot <- function(mr_results, dat) {
     dat$beta.outcome[index] <- dat$beta.outcome[index] * -1
     
     # plot
-    p <- ggplot2::ggplot(data=dat, ggplot2::aes(x=beta.exposure, y=beta.outcome, size=-log10(phi_p), shape=inv)) +
+    p <- ggplot2::ggplot(data=dat, ggplot2::aes(x=beta.exposure, y=beta.outcome, size=-log10(phi_p), color=gene, shape=inv)) +
         ggplot2::geom_errorbar(ggplot2::aes(ymin=beta.outcome-se.outcome, ymax=beta.outcome+se.outcome), colour="grey", width=0) +
         ggplot2::geom_errorbarh(ggplot2::aes(xmin=beta.exposure-se.exposure, xmax=beta.exposure+se.exposure), colour="grey", height=0) +
         ggplot2::geom_point() +
@@ -35,10 +35,10 @@ mr_scatter_var_plot <- function(mr_results, dat) {
 ao <- available_outcomes()
 
 # Get instruments
-exposure_dat <- extract_instruments("ukb-d-30730_irnt")
+exposure_dat <- extract_instruments("ukb-d-30880_irnt")
 
 # Get effects of instruments on outcome
-outcome_dat <- extract_outcome_data(snps=exposure_dat$SNP, outcomes="ieu-a-24")
+outcome_dat <- extract_outcome_data(snps=exposure_dat$SNP, outcomes="ebi-a-GCST001790")
 
 # Harmonise the exposure and outcome data
 dat <- harmonise_data(exposure_dat, outcome_dat)
@@ -48,11 +48,14 @@ res <- mr(dat)
 
 # load IV-LDL variance effects
 ve <- data.frame()
-for (file in list.files("/Users/ml18692/projects/varGWAS-ukbb-biomarkers/data/ggt")){
+for (file in list.files("/Users/ml18692/projects/varGWAS-ukbb-biomarkers/data/urate")){
     message(paste0("working on:", file))
-    ve <- rbind(ve, fread(paste0("/Users/ml18692/projects/varGWAS-ukbb-biomarkers/data/ggt/", file)))
+    ve <- rbind(ve, fread(paste0("/Users/ml18692/projects/varGWAS-ukbb-biomarkers/data/urate/", file)))
 }
 dat <- merge(dat, ve %>% dplyr::select(rsid, phi_x1, phi_x2, phi_p) %>% dplyr::rename(SNP="rsid"), "SNP")
+
+# append SLC2A9 status
+dat <- dat %>% dplyr::mutate(gene = case_when(chr.exposure == "4" & pos.exposure >= 9772777 - 500000 & pos.exposure <= 10056560 + 500000 ~ TRUE, TRUE ~ FALSE))
 
 # scatter plot
 dat$inv <- dat$phi_x2 < 0
