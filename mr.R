@@ -51,6 +51,45 @@ names(SBP) <- paste0(names(SBP), ".SBP")
 res_single <- merge(res_single, BMI, by.x="key", by.y="key.BMI")
 res_single <- merge(res_single, SBP, by.x="key", by.y="key.SBP")
 
-# SNP-variance plot
-ggplot(res_single, aes(x=phi_x2.BMI, y=ivw.delta)) +
-    geom_point()
+# wide to long
+long <- res_single %>% dplyr::select(-egger.delta, -wmedian.delta, -ivw.delta, -smode.delta, -wmode.delta)
+
+res_single_long <- data.frame()
+
+long$delta <- res_single$egger.delta
+long$method <- "MR Egger"
+res_single_long <- rbind(res_single_long, long)
+
+long$delta <- res_single$wmedian.delta
+long$method <- "Weighted Median"
+res_single_long <- rbind(res_single_long, long)
+
+long$delta <- res_single$ivw.delta
+long$method <- "IVW"
+res_single_long <- rbind(res_single_long, long)
+
+long$delta <- res_single$smode.delta
+long$method <- "Simple Mode"
+res_single_long <- rbind(res_single_long, long)
+
+long$delta <- res_single$wmode.delta
+long$method <- "Weighted Mode"
+res_single_long <- rbind(res_single_long, long)
+
+# plot
+ggplot(res_single_long, aes(x=-log10(phi_p.BMI), y=abs(delta))) +
+    geom_point() +
+    facet_grid(~method) +
+    theme_classic()
+ggplot(res_single_long, aes(x=phi_x1.BMI, y=phi_x2.BMI, size=abs(delta))) +
+    geom_point() +
+    facet_grid(~method) +
+    theme_classic()
+ggplot(res_single_long, aes(x=-log10(phi_p.SBP), y=delta)) +
+    geom_point() +
+    facet_grid(~method) +
+    theme_classic()
+ggplot(res_single_long, aes(x=phi_x1.SBP, y=phi_x2.SBP, size=abs(delta))) +
+    geom_point() +
+    facet_grid(~method) +
+    theme_classic()
