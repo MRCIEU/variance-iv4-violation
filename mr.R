@@ -2,6 +2,8 @@ library("TwoSampleMR")
 library("ggplot2")
 set.seed(123)
 
+# could use testosterone on CVD outcomes
+
 # List available GWASs
 ao <- available_outcomes()
 
