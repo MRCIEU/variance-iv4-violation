@@ -1,5 +1,6 @@
 library("dplyr")
 library("TwoSampleMR")
+library("genpwr")
 source("funs.R")
 set.seed(123)
 
@@ -20,10 +21,25 @@ for (i in 1:n_sim){
     # Z1
     z1 <- get_simulated_genotypes(z1_q, n_obs)
     # Zn
-    zn <- apply(zn_q, 2, function(q) get_simulated_genotypes(q, n_obs))
-
-    b <- c(runif(n_snps * 0.5, min=-0.05, max=-0.01), runif(n_snps * 0.5, min=0.01, max=0.05))
-    x <- z1*0.2 + u*0.2 + z1*u*0.2 + rowSums(t(t(zn)*b)) + c + rnorm(n_obs)
-    lm(x~zn + z1*u) %>% summary
-    y <- x + x*u + c + rnorm(n_obs)
+    zn <- sapply(zn_q, function(q) get_simulated_genotypes(q, n_obs))   
+    # calcualte SNP effect sizes
+    b <- genpwr.calc(
+        calc = "es", 
+        model = "linear", 
+        N = n_obs, 
+        Power = 0.8, 
+        MAF = c(z1_q, zn_q), 
+        Alpha = 0.05, 
+        sd_y = 1
+    ) %>%
+    dplyr::filter(Test.Model=="Additive", True.Model=="Additive") %>% dplyr::pull("ES_at_Alpha_0.05") %>% as.numeric
+    # simulate exposure
+    x <- z1*b[1] + rowSums(t(t(zn)*b[-1])) + c + rnorm(n_obs)
+    # test power
+    p <- lm(x~z1 + zn) %>% tidy %>% dplyr::pull(p.value)
+    # store test statistics
+    results <- rbind(results, as.data.frame(t(p)))
 }
+
+# calculate per-SNP power
+apply(results, 2, function(x) binom.test(sum(x < 0.05), n_sim) %>% tidy)

@@ -5,4 +5,10 @@
 - Sim1
     - Effect of IV-exp and/or exp-out interaction effects on causal estimate bias and coverage. Also including IV-exp and IV-out variance test statistics
 - Sim2
-    - Multi-SNP MR analysis with NOSH violation
+    - Multi-SNP MR analysis with NOSH violation & testing for IV-exp and IV-out variance effects
+
+## Applied examples
+
+- Testosterone on CVD
+- BMI on SBP
+- Urate on gout
