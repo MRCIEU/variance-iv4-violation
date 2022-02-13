@@ -4,16 +4,18 @@ library("genpwr")
 source("funs.R")
 set.seed(123)
 
-n_sim <- 2000
+n_sim <- 50
 n_obs <- 10000
 n_snps <- 9
-phi <- 0
+phi_zx <- 0
+phi_xy <- 0
 
 # Main effect of U on X
-bx_u <- 0.185
+bx_u <- 0.175
 
 res_p <- data.frame()
 res_f <- data.frame()
+sd_x <- rep(NA, n_sim)
 for (i in 1:n_sim){
     # confounder
     c <- rnorm(n_obs)
@@ -25,7 +27,7 @@ for (i in 1:n_sim){
     # Zn
     zn_q <- runif(n_snps, min=0.05, max=0.5)
     zn <- sapply(zn_q, function(q) get_simulated_genotypes(q, n_obs))
-    # calculate SNP effect sizes
+    # calculate SNP effect sizes assuming 80% power with P<5e-8
     pwr <- genpwr.calc(
         calc = "es", 
         model = "linear", 
@@ -40,11 +42,12 @@ for (i in 1:n_sim){
     b <- pwr %>% dplyr::filter(Test.Model=="Additive", True.Model=="Additive") %>% dplyr::pull("ES_at_Alpha_5e-08") %>% as.numeric
     stopifnot(!any(is.na(b)))
     # interaction effect size relative to main effect
-    bx_zu <- b[1]*phi
+    bx_zu <- b[1]*phi_zx
     # variance of Z1U
     vz1u <- z1_q^2*0.5^2 + 0.5^2*(2*(1-z1_q)*z1_q) + (2*(1-z1_q)*z1_q)*0.5^2
     # simulate exposure 
     x <- z1*b[1] + rowSums(t(t(zn)*b[-1])) + u*bx_u + z1*u*bx_zu + c + rnorm(n_obs, sd=sqrt(1-vz1u*bx_zu^2))
+    sd_x[i] <- sd(x)
     # power
     p <- lm(x ~ z1 + u + zn) %>% tidy %>% dplyr::pull(p.value)
     # store test P
@@ -52,13 +55,17 @@ for (i in 1:n_sim){
     # store test F
     f <- sapply(1:(n_snps+1), function(n) if (n==1) {summary(lm(x~z1))$fstatistic[1] %>% as.numeric} else {summary(lm(x~zn[,n-1]))$fstatistic[1] %>% as.numeric})
     res_f <- rbind(res_f, as.data.frame(t(f)))
+    # causal effect of X on Y explaining 5% total variance
+    #y <- x + u + x*u*phi_xy + rnorm(n_obs, sd=sqrt())
 }
 
-# calculate power
+# Z-X
+## calculate power
 pwr <- do.call(rbind.data.frame, apply(res_p, 2, function(x) binom.test(sum(x < 5e-8), n_sim) %>% tidy)) %>% dplyr::select(estimate, conf.low, conf.high)
 pwr$term <- lm(x ~ z1 + u + zn) %>% tidy %>% dplyr::pull(term)
-
-# mean F-stat
+## mean F-stat
 f_stat <- do.call(rbind.data.frame, apply(res_f, 2, function(x) t.test(x) %>% tidy)) %>% dplyr::select(estimate, conf.low, conf.high)
-# proportion of F < 10
+## proportion of F < 10
 f_stat_lt10 <- apply(res_f, 2, function(x) sum(x < 10))
+
+# X-Y
