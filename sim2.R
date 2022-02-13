@@ -4,7 +4,7 @@ library("genpwr")
 source("funs.R")
 set.seed(123)
 
-n_sim <- 2000
+n_sim <- 50
 n_obs <- 10000
 n_snps <- 9
 phi_zx <- 4
@@ -13,13 +13,13 @@ phi_xy <- 0
 # Main effect of U on X
 bx_u <- 0.18
 
-# Variance of UCE
+# var(UCE)
 vuce <- 0.25*bx_u^2 + 1 + 1
 
 # Func to estimate var(z)
 evz <- function(q, b){
     p <- 1-q
-    vz <- 2*p*q
+    vz <- 2*p*q # variance of a binomial
     return(vz * b^2)
 }
 
@@ -27,6 +27,8 @@ res_p <- data.frame()
 res_f <- data.frame()
 var_x <- rep(NA, n_sim)
 evar_x <- rep(NA, n_sim)
+var_zu <- rep(NA, n_sim)
+evar_zu <- rep(NA, n_sim)
 for (i in 1:n_sim){
     # confounder
     c <- rnorm(n_obs)
@@ -60,10 +62,13 @@ for (i in 1:n_sim){
     # variance of Z1..n
     vz <- sum(c(evz(z1_q, b[1]),sapply(1:n_snps, function(n) evz(zn_q[n],b[n+1]))))
     # simulate exposure
-    x <- z1*b[1] + rowSums(t(t(zn)*b[-1])) + u*bx_u + z1*u*bx_zu + c + rnorm(n_obs, sd=sqrt(1-vz1u*bx_zu^2))
+    x <- z1*b[1] + rowSums(t(t(zn)*b[-1])) + z1*u*bx_zu + u*bx_u + c + rnorm(n_obs, sd=sqrt(1-vz1u*bx_zu^2))
     # var X
     evar_x[i] <- vz + vz1u*bx_zu^2 + vuce
     var_x[i] <- var(x)
+    # var Z
+    evar_zu[i] <- vz1u*bx_zu^2
+    var_zu[i] <- var(z1*u*bx_zu)
     # power
     p <- lm(x ~ z1 + u + zn) %>% tidy %>% dplyr::pull(p.value)
     # store test P
