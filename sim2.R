@@ -10,7 +10,7 @@ es <- function(maf){
     return(b)
 }
 
-n_sim <- 50
+n_sim <- 30
 n_obs <- 10000
 n_snps <- 10
 r2_z <- 0.01 # explained variance of main effect of Z on X
@@ -88,10 +88,12 @@ for (r2_zu in seq(0, 0.1, 0.02)){
             b_obs_a <- lm(y ~ x + c + u) %>% tidy %>% dplyr::filter(term == "x") %>% dplyr::pull(estimate)
             # MR estimates
             ivw <- TwoSampleMR::mr_ivw(b_exp, b_out, se_exp, se_out)
+            wald <- TwoSampleMR::mr_wald_ratio(b_exp[1], b_out[1], se_exp[1], se_out[1])
             # store results
             result$b_obs <- b_obs
             result$b_obs_a <- b_obs_a
-            result$b_mr <- ivw$b
+            result$b_ivw <- ivw$b
+            result$b_wald <- wald$b
             result$r2_zu <- r2_zu
             result$r2_xu <- r2_xu
             result$x_b <- x_b
