@@ -7,15 +7,6 @@ set.seed(123)
 n_sim <- 50
 n_obs <- 1000
 
-# Paper
-# 1. Bias and coverage of MR estimates under varying IV4 violation
-# 2. Power and T1E to detect #1 using variance test
-# 3. Applied example; for positives compare with IV strength among covariates
-# 4. Hypothesis-free application?
-
-# Hartwig et al does bias, coverage, rejection rate
-# compare with IV strength among strata of measured covariates
-
 # NOSH violation
 results1 <- data.frame()
 for (phi_z in seq(0, 2, 0.5)){
@@ -24,8 +15,8 @@ for (phi_z in seq(0, 2, 0.5)){
             c <- rnorm(n_obs)
             z <- get_simulated_genotypes(0.25, n_obs)
             u <- rbinom(n_obs, 1, 0.5)
-            x <- z + u + z*u*phi_z + c + rnorm(n_obs)
-            y <- x + u + x*u*phi_x + c + rnorm(n_obs)
+            x <- z*.5 + u + z*u*phi_z + c + rnorm(n_obs)
+            y <- x*.5 + u + x*u*phi_x + c + rnorm(n_obs)
             res <- get_est(z, x, y)
             res$phi_z <- phi_z
             res$phi_x <- phi_x
