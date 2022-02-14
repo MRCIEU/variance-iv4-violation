@@ -1,92 +1,101 @@
 library("dplyr")
 library("TwoSampleMR")
-library("genpwr")
+library("varGWASR")
 source("funs.R")
 set.seed(123)
 
+#' Get the effect size for each SNP to have R^2 assuming standard Normal outcome
+es <- function(maf){
+    b <- sapply(maf, function(q) {p <- 1-q; v <- 2*p*q; return(sqrt(r2_z/v))})
+    return(b)
+}
+
 n_sim <- 50
 n_obs <- 10000
-n_snps <- 9
-phi_zx <- 4
-phi_xy <- 0
+n_snps <- 10
+r2_z <- 0.01 # explained variance of main effect of Z on X
+r2_u <- 0.05 # explained variance of main effect of U on X
+r2_c <- 0.05 # explained variance of main effect of C on X
+r2_x <- 0.05 # explained variance of main effect of X on Y
 
-# Main effect of U on X
-bx_u <- 0.18
-
-# var(UCE)
-vuce <- 0.25*bx_u^2 + 1 + 1
-
-# Func to estimate var(z)
-evz <- function(q, b){
-    p <- 1-q
-    vz <- 2*p*q # variance of a binomial
-    return(vz * b^2)
+results <- data.frame()
+for (r2_zu in seq(0, 0.1, 0.02)){
+    for (r2_xu in seq(0, 0.8, 0.2)){
+        for (i in 1:n_sim){
+            # Z-X
+            # Z1
+            z1_q <- runif(1, min=0.05, max=0.5)
+            z1 <- get_simulated_genotypes(z1_q, n_obs)
+            # Zn
+            zn_q <- runif(n_snps-1, min=0.05, max=0.5)
+            zn <- sapply(zn_q, function(q) get_simulated_genotypes(q, n_obs))
+            # modifier
+            u <- rbinom(n_obs, 1, 0.5)
+            # confounder
+            c <- rnorm(n_obs)
+            # betas
+            z_b <- es(c(z1_q, zn_q))
+            u_b <- sqrt(r2_u/0.5^2)
+            c_b <- sqrt(r2_c/1)
+            v_z1u <- var(z1*u) + 2*cov(z1, z1*u) + 2*cov(u, z1*u) # variance of interaction term # TODO expectation
+            zu_b <- sqrt(r2_zu/v_z1u)
+            # calculate explained variance
+            ev <- r2_z*n_snps + r2_u + r2_c + r2_zu
+            stopifnot(!ev > 1)
+            # standard Normal exposure
+            x <- 
+                z1*z_b[1] + 
+                rowSums(t(t(zn)*z_b[-1])) + 
+                u*u_b +
+                c*c_b +
+                z1*u*zu_b +
+                rnorm(n_obs, sd=sqrt(1 - ev))
+            # X-Y
+            # betas
+            u_b <- sqrt(r2_u/0.5^2)
+            c_b <- sqrt(r2_c/1)
+            v_xu <- var(x*u) + 2*cov(x, x*u) + 2*cov(u, x*u) # variance of interaction term # TODO expectation
+            xu_b <- sqrt(r2_xu/v_xu)
+            x_b <- sqrt(r2_x/1)
+            # calculate explained variance
+            ev <- r2_x + r2_u + r2_c + r2_xu
+            stopifnot(!ev > 1)
+            # standard Normal outcome
+            y <- 
+                x*x_b +
+                u*u_b +
+                c*c_b +
+                x*u*xu_b +
+                rnorm(n_obs, sd=sqrt(1 - ev))
+            # IV-exp
+            b_exp <- sapply(1:(n_snps-1), function(n) lm(x ~ zn[,n]) %>% tidy %>% dplyr::filter(term == "zn[, n]") %>% dplyr::pull(estimate))
+            b_exp <- c(lm(x ~ z1) %>% tidy %>% dplyr::filter(term == "z1") %>% dplyr::pull(estimate), b_exp)
+            se_exp <- sapply(1:(n_snps-1), function(n) lm(x ~ zn[,n]) %>% tidy %>% dplyr::filter(term == "zn[, n]") %>% dplyr::pull(std.error))
+            se_exp <- c(lm(x ~ z1) %>% tidy %>% dplyr::filter(term == "z1") %>% dplyr::pull(std.error), se_exp)
+            # IV-out
+            b_out <- sapply(1:(n_snps-1), function(n) lm(y ~ zn[,n]) %>% tidy %>% dplyr::filter(term == "zn[, n]") %>% dplyr::pull(estimate))
+            b_out <- c(lm(y ~ z1) %>% tidy %>% dplyr::filter(term == "z1") %>% dplyr::pull(estimate), b_out)
+            se_out <- sapply(1:(n_snps-1), function(n) lm(y ~ zn[,n]) %>% tidy %>% dplyr::filter(term == "zn[, n]") %>% dplyr::pull(std.error))
+            se_out <- c(lm(y ~ z1) %>% tidy %>% dplyr::filter(term == "z1") %>% dplyr::pull(std.error), se_out)
+            # IV variance effects
+            result1 <- varGWASR::model(data.frame(z1,x), "z1", "x")
+            names(result1) <- paste0(names(result1), ".x")
+            result2 <- varGWASR::model(data.frame(z1,y), "z1", "y")
+            names(result2) <- paste0(names(result2), ".y")
+            result <- cbind(result1, result2)
+            # observational estimates
+            b_obs <- lm(y ~ x) %>% tidy %>% dplyr::filter(term == "x") %>% dplyr::pull(estimate)
+            b_obs_a <- lm(y ~ x + c + u) %>% tidy %>% dplyr::filter(term == "x") %>% dplyr::pull(estimate)
+            # MR estimates
+            ivw <- TwoSampleMR::mr_ivw(b_exp, b_out, se_exp, se_out)
+            # store results
+            result$b_obs <- b_obs
+            result$b_obs_a <- b_obs_a
+            result$b_mr <- ivw$b
+            result$r2_zu <- r2_zu
+            result$r2_xu <- r2_xu
+            result$x_b <- x_b
+            results <- rbind(results, result)
+        }
+    }
 }
-
-res_p <- data.frame()
-res_f <- data.frame()
-var_x <- rep(NA, n_sim)
-evar_x <- rep(NA, n_sim)
-var_zu <- rep(NA, n_sim)
-evar_zu <- rep(NA, n_sim)
-for (i in 1:n_sim){
-    # confounder
-    c <- rnorm(n_obs)
-    # modifier
-    u <- rbinom(n_obs, 1, 0.5)
-    # Z1
-    z1_q <- runif(1, min=0.05, max=0.5)
-    z1 <- get_simulated_genotypes(z1_q, n_obs)
-    # Zn
-    zn_q <- runif(n_snps, min=0.05, max=0.5)
-    zn <- sapply(zn_q, function(q) get_simulated_genotypes(q, n_obs))
-    # calculate SNP effect sizes assuming 80% power with P < 5e-8
-    pwr <- genpwr.calc(
-        calc = "es", 
-        model = "linear", 
-        N = n_obs, 
-        Power = 0.8,
-        MAF = c(z1_q, zn_q),
-        Alpha = 5e-8,
-        sd_y = sqrt(vuce)
-    )
-    b <- pwr %>% 
-        dplyr::filter(Test.Model=="Additive", True.Model=="Additive") %>% 
-        dplyr::pull("ES_at_Alpha_5e-08") %>% 
-        as.numeric
-    stopifnot(!any(is.na(b)))
-    # interaction effect size relative to main effect
-    bx_zu <- b[1]*phi_zx
-    # variance of Z1U product
-    vz1u <- z1_q^2*0.5^2 + 0.5^2*(2*(1-z1_q)*z1_q) + (2*(1-z1_q)*z1_q)*0.5^2
-    # variance of Z1..n
-    vz <- sum(c(evz(z1_q, b[1]),sapply(1:n_snps, function(n) evz(zn_q[n],b[n+1]))))
-    # simulate exposure
-    x <- z1*b[1] + rowSums(t(t(zn)*b[-1])) + z1*u*bx_zu + u*bx_u + c + rnorm(n_obs, sd=sqrt(1-vz1u*bx_zu^2))
-    # var X
-    evar_x[i] <- vz + vz1u*bx_zu^2 + vuce + 2*cov(x, xu) + 2*cov(u, xu)
-    var_x[i] <- var(x)
-    # var Z
-    evar_zu[i] <- vz1u*bx_zu^2
-    var_zu[i] <- var(z1*u*bx_zu)
-    # power
-    p <- lm(x ~ z1 + u + zn) %>% tidy %>% dplyr::pull(p.value)
-    # store test P
-    res_p <- rbind(res_p, as.data.frame(t(p)))
-    # store test F
-    f <- sapply(1:(n_snps+1), function(n) if (n==1) {summary(lm(x~z1))$fstatistic[1] %>% as.numeric} else {summary(lm(x~zn[,n-1]))$fstatistic[1] %>% as.numeric})
-    res_f <- rbind(res_f, as.data.frame(t(f)))
-    # causal effect of X on Y explaining 5% total variance
-    #y <- x + u + x*u*phi_xy + rnorm(n_obs, sd=sqrt())
-}
-
-# Z-X
-## calculate power
-pwr <- do.call(rbind.data.frame, apply(res_p, 2, function(x) binom.test(sum(x < 5e-8), n_sim) %>% tidy)) %>% dplyr::select(estimate, conf.low, conf.high)
-pwr$term <- lm(x ~ z1 + u + zn) %>% tidy %>% dplyr::pull(term)
-## mean F-stat
-f_stat <- do.call(rbind.data.frame, apply(res_f, 2, function(x) t.test(x) %>% tidy)) %>% dplyr::select(estimate, conf.low, conf.high)
-## proportion of F < 10
-f_stat_lt10 <- apply(res_f, 2, function(x) sum(x < 10))
-
-# X-Y
