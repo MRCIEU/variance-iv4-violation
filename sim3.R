@@ -19,8 +19,8 @@ r2_c <- 0.05 # explained variance of main effect of C on X
 r2_x <- 0.05 # explained variance of main effect of X on Y
 
 results <- data.frame()
-for (r2_zu in seq(0, 0.1, 0.02)){
-    for (r2_xu in seq(0, 0, 0)){
+for (r2_zu in seq(0, 0, 0)){
+    for (r2_xu in seq(0, 0.1, 0.02)){
         for (i in 1:n_sim){
             # Z-X
             # Z1
@@ -50,7 +50,6 @@ for (r2_zu in seq(0, 0.1, 0.02)){
                 c*c_b +
                 z1*u*zu_b +
                 rnorm(n_obs, sd=sqrt(1 - ev))
-            
             # X-Y
             # betas
             u_b <- sqrt(r2_u/0.5^2)
@@ -96,7 +95,6 @@ for (r2_zu in seq(0, 0.1, 0.02)){
             result$r2_zu <- r2_zu
             result$r2_xu <- r2_xu
             result$x_b <- x_b
-
             results <- rbind(results, result)
         }
     }
