@@ -1,4 +1,5 @@
 library("dplyr")
+library("ggplot2")
 library("TwoSampleMR")
 source("funs.R")
 set.seed(123)
@@ -102,9 +103,9 @@ for (r2_zu in seq(0, 0.25, 0.05)){
             wald <- mr_wald_ratio(b_exp, b_out, se_exp, se_out, NULL)
             v_z <- model(data.frame(z, x), "z", "x")
             names(v_z) <- paste0(names(v_z), ".z")
-            v_x <- model(data.frame(z, x), "z", "x")
-            names(v_x) <- paste0(names(v_x), ".x")
-            result <- cbind(v_z, v_x)
+            v_y <- model(data.frame(z, y), "z", "y")
+            names(v_y) <- paste0(names(v_y), ".y")
+            result <- cbind(v_z, v_y)
             result$r2_zu <- r2_zu
             result$r2_xu <- r2_xu
             result$b_mr <- wald$b
@@ -115,3 +116,12 @@ for (r2_zu in seq(0, 0.25, 0.05)){
         }
     }
 }
+
+summary <- results %>% dplyr::group_by(r2_zu, r2_xu) %>% dplyr::summarize(b_mr=mean(b_mr), phi_p.z=mean(phi_p.z), phi_p.x=mean(phi_p.y), se_exp=mean(se_exp), se_out=mean(se_out), phi_x1.z=mean(phi_x1.z), phi_x2.z=mean(phi_x2.z), phi_x1.x=mean(phi_x1.y), phi_x2.x=mean(phi_x2.y))
+
+pdf("bias.pdf")
+ggplot(summary, aes(x=r2_zu, y=b_mr, color=phi_x2.x)) +
+    geom_point() + theme_classic() + geom_hline(yintercept=results$b[1], linetype="dashed", color="grey") +
+    labs(y="Mean MR estimate",x="IV-X interaction explained variance") + facet_grid(~r2_xu) +
+    scale_x_continuous(breaks=scales::pretty_breaks(n=3))
+dev.off()
