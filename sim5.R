@@ -41,3 +41,20 @@ for (q in seq(0.05, 0.5, 0.05)){
         results <- rbind(results, data.frame(cov=cov(z, zu), q, ecov))
     }
 }
+
+results <- data.frame()
+r2_u <- 0.05
+u_b <- sqrt(r2_u)
+r2_z <- 0.05
+z_b <- sqrt(r2_z)
+r2_zu <- 0.1
+zu_b <- sqrt(r2_zu)
+for (i in 1:n_sim){
+    z <- get_simulated_genotypes(0.25, n_obs)
+    u <- rbinom(n_obs, 1, 0.5)
+    z <- scale(z)
+    u <- scale(u)
+    x <- z*z_b + u*u_b + z*u*zu_b + rnorm(n_obs, sd=sqrt(1-(r2_u+r2_z+r2_zu)))
+    r <- summary(lm(x ~ z*u))$r.squared
+    results <- rbind(results, data.frame(var_x=var(x), r))
+}
