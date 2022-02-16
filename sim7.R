@@ -1,74 +1,9 @@
 library("dplyr")
 library("ggplot2")
 library("TwoSampleMR")
+library("viridis")
 source("funs.R")
 set.seed(123)
-
-#' Test for effect of SNP on outcome variance using the LAD-BF model
-#'
-#' @param data Dataframe of observations
-#' @param x Name of SNP dosage
-#' @param y Name of outcome
-#' @param covar1 Optional vector of covariates to include in the first-stage model
-#' @param covar2 Optional vector of covariates to include in the second-stage model
-#' @return Dataframe containing variance effect for SNP=1 (phi_x1) and SNP=2 (phi_x2) with SE and p and F-stat
-#' @export
-model <- function(data, x, y, covar1=NULL, covar2=NULL){
-    if (any(is.na(data))) stop("Dataframe contains NA values")
-    if (!x %in% names(data)) stop(paste0(x, " was not in dataframe"))
-    if (!y %in% names(data)) stop(paste0(y, " was not in dataframe"))
-    if (!all(covar1 %in% names(data))) stop(paste0("Dataframe is missing some of: ", paste0(covar1, collapse=" ")))
-    if (!all(covar2 %in% names(data))) stop(paste0("Dataframe is missing some of: ", paste0(covar2, collapse=" ")))
-    if (!is.numeric(data[[x]])) stop("Genotype must be numeric")
-
-    # prepare first-stage fit matrix
-    if (!is.null(covar1)){
-        X <- data %>% dplyr::select(!!x, !!covar1) %>% as.matrix
-    } else {
-        X <- data %>% dplyr::select(!!x) %>% as.matrix
-    }
-    # first-stage fit
-    fit <- cqrReg::qrfit(X=X, y=data[[y]], tau=.5, method="mm")
-    b <- rbind(fit$b, fit$beta)
-    # predicted
-    X <- cbind(rep(1, nrow(X)), X)
-    fitted <- X %*% b
-    # residual
-    d <- data[[y]] - fitted
-    # abs residual
-    d <- abs(as.vector(d))
-    # second-stage model
-    data[[x]] <- as.factor(data[[x]])
-    if (!is.null(covar2)){
-        X <- data %>% dplyr::select(!!x, !!covar2)
-        fit2 <- lm(d ~ ., data=X)
-        X <- data %>% dplyr::select(!!covar2)
-        fit_null <- lm(d ~ ., data=X)
-        p <- anova(fit_null, fit2) %>% broom::tidy(.) %>% dplyr::pull(p.value) %>% dplyr::nth(2)
-        f <- anova(fit_null, fit2) %>% broom::tidy(.) %>% dplyr::pull(statistic) %>% dplyr::nth(2)
-    } else {
-        X <- data %>% dplyr::select(!!x)
-        fit2 <- lm(d ~ ., data=X)
-        fit_null <- lm(d ~ 1, data=data)
-        p <- anova(fit_null, fit2) %>% broom::tidy(.) %>% dplyr::pull(p.value) %>% dplyr::nth(2)
-        f <- anova(fit_null, fit2) %>% broom::tidy(.) %>% dplyr::pull(statistic) %>% dplyr::nth(2)
-    }
-
-    # deltamethod
-    v1 <- car::deltaMethod(fit2, "(2*b0*b1+b1^2)/(2/pi)", parameterNames=c("b0", "b1", "b2"), vcov=sandwich::vcovHC(fit2, type = "HC0"))
-    v2 <- car::deltaMethod(fit2, "(2*b0*b2+b2^2)/(2/pi)", parameterNames=c("b0", "b1", "b2"), vcov=sandwich::vcovHC(fit2, type = "HC0"))
-
-    res <- data.frame(
-        phi_x1=v1$Estimate,
-        se_x1=v1$SE,
-        phi_x2=v2$Estimate,
-        se_x2=v2$SE,
-        phi_f=f,
-        phi_p=p
-    )
-    
-    return(res)
-}
 
 n_sim <- 50
 n_obs <- 10000
@@ -79,8 +14,8 @@ r2_z <- 0.05
 r2_x <- 0.05
 
 results <- data.frame()
-for (r2_zu in seq(0, 0.25, 0.05)){
-    for (r2_xu in seq(0, 0.25, 0.05)){
+for (r2_zu in seq(0, 0.1, 0.02)){
+    for (r2_xu in seq(0, 0.1, 0.02)){
         for (i in 1:n_sim){
             # betas
             u_b <- sqrt(r2_u)
@@ -102,7 +37,7 @@ for (r2_zu in seq(0, 0.25, 0.05)){
             se_out <- lm(y~z) %>% tidy %>% dplyr::filter(term=="z") %>% dplyr::pull(std.error)
             wald <- mr_wald_ratio(b_exp, b_out, se_exp, se_out, NULL)
             v_z <- model(data.frame(z, x), "z", "x")
-            names(v_z) <- paste0(names(v_z), ".z")
+            names(v_z) <- paste0(names(v_z), ".x")
             v_y <- model(data.frame(z, y), "z", "y")
             names(v_y) <- paste0(names(v_y), ".y")
             result <- cbind(v_z, v_y)
@@ -117,11 +52,26 @@ for (r2_zu in seq(0, 0.25, 0.05)){
     }
 }
 
-summary <- results %>% dplyr::group_by(r2_zu, r2_xu) %>% dplyr::summarize(b_mr=mean(b_mr), phi_p.z=mean(phi_p.z), phi_p.x=mean(phi_p.y), se_exp=mean(se_exp), se_out=mean(se_out), phi_x1.z=mean(phi_x1.z), phi_x2.z=mean(phi_x2.z), phi_x1.x=mean(phi_x1.y), phi_x2.x=mean(phi_x2.y))
+estimates <- results %>%
+    dplyr::group_by(r2_zu, r2_xu) %>% 
+    dplyr::summarize(cbind(t.test(b_mr) %>% tidy, phi_p.x=mean(phi_p.x)))
 
 pdf("bias.pdf")
-ggplot(summary, aes(x=r2_zu, y=b_mr, color=phi_x2.x)) +
+ggplot(estimates, aes(x=r2_zu, y=estimate, ymin=conf.low, ymax=conf.high, color=-log10(phi_p.x))) +
     geom_point() + theme_classic() + geom_hline(yintercept=results$b[1], linetype="dashed", color="grey") +
-    labs(y="Mean MR estimate",x="IV-X interaction explained variance") + facet_grid(~r2_xu) +
-    scale_x_continuous(breaks=scales::pretty_breaks(n=3))
+    labs(y="Wald estimate (95% CI)",x="Z-X interaction explained variance") + facet_grid(~r2_xu) +
+    scale_x_continuous(breaks=scales::pretty_breaks(n=3)) +
+    geom_errorbar() +
+    labs(color="-log10(P_variance) Z-X") +
+    scale_color_viridis(direction = 1) +
+    theme(
+            strip.background = element_blank(),
+            strip.text.y = element_text(angle = 0),
+            legend.position = "bottom",
+            legend.background = element_blank(),
+            legend.box.background = element_rect(colour = "black"),
+            panel.spacing = unit(1, "lines"), 
+            plot.title = element_text(hjust = 0.5, size=11)
+        ) +
+        ggtitle("X-Y interaction explained variance")
 dev.off()
