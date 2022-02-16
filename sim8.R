@@ -5,14 +5,17 @@ library("viridis")
 source("funs.R")
 set.seed(123)
 
-n_sim <- 50
+n_sim <- 200
 n_obs <- 10000
-r2_z <- 0.05
-r2_x <- 0.05
+r2_z <- 0.1
+r2_x <- 0.1
 
 results <- data.frame()
 for (h in seq(-1, 1, .5)){
     for (s in seq(0, 1, 0.2)){
+        if (h == 0 & s == 1){
+            next
+        }
         for (i in 1:n_sim){
             # betas
             b0 <- 0.5
@@ -29,6 +32,13 @@ for (h in seq(-1, 1, .5)){
 
             # exposure           
             x <- z*u0*b0 + z*u1*b1 + z*u2*b2 + rnorm(n_obs, sd=sqrt(x_tv-z_ev))
+
+            # check IV1 holds
+            f <- summary(lm(x~z))$fstatistic[1] %>% as.numeric
+            if (f < 10){
+                warning(paste(h, s, f))
+                next
+            }
 
             # outcome
             x_ev <- var(x)
@@ -56,3 +66,27 @@ for (h in seq(-1, 1, .5)){
         }
     }
 }
+
+estimates <- results %>%
+    dplyr::group_by(h, s) %>% 
+    dplyr::summarize(cbind(t.test(b_mr) %>% tidy, phi_p.x=mean(phi_p.x)))
+
+pdf("monotonicity-bias.pdf")
+ggplot(estimates, aes(x=h, y=estimate, ymin=conf.low, ymax=conf.high, color=-log10(phi_p.x))) +
+    geom_point() + theme_classic() + geom_hline(yintercept=1, linetype="dashed", color="grey") +
+    labs(y="Wald estimate (95% CI)",x="Heterozygote effect") + facet_grid(~s) +
+    scale_x_continuous(breaks=scales::pretty_breaks(n=3)) +
+    geom_errorbar() +
+    labs(color="-log10(P_variance) Z-X") +
+    scale_color_viridis(direction = 1) +
+    theme(
+            strip.background = element_blank(),
+            strip.text.y = element_text(angle = 0),
+            legend.position = "bottom",
+            legend.background = element_blank(),
+            legend.box.background = element_rect(colour = "black"),
+            panel.spacing = unit(1, "lines"), 
+            plot.title = element_text(hjust = 0.5, size=11)
+        ) +
+        ggtitle("Recessive allele effect")
+dev.off()
