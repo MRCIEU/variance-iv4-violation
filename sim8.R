@@ -5,8 +5,8 @@ library("viridis")
 source("funs.R")
 set.seed(123)
 
-n_sim <- 200
-n_obs <- 10000
+n_sim <- 50
+n_obs <- 100000
 r2_z <- 0.1
 r2_x <- 0.1
 
@@ -61,6 +61,7 @@ for (h in seq(-1, 1, .5)){
             result$b <- sqrt(r2_x)
             result$h <- h
             result$s <- s
+            result$f <- f
 
             results <- rbind(results, result)
         }
