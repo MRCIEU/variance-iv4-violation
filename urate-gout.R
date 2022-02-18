@@ -79,13 +79,13 @@ exposure_dat <- format_data(exp_df, type="exposure")
 outcome_dat <- format_data(out_df, type="outcome")
 
 # Harmonise the exposure and outcome data
-dat <- harmonise_data(exposure_dat, outcome_dat, action=1)
+mr_dat <- harmonise_data(exposure_dat, outcome_dat, action=1)
 
 # Perform MR
-res <- mr(dat)
+res <- mr(mr_dat)
 
 # MR effect of urate on gout
-res_loo <- mr_leaveoneout(dat)
+res_loo <- mr_leaveoneout(mr_dat)
 
 # merge IV x sex P
 res_loo <- merge(res_loo, exp_df %>% dplyr::select(SNP, p_int) %>% dplyr::mutate(SNP=tolower(SNP)))
@@ -101,13 +101,13 @@ stratified <- function(males){
         snp <- paste0("chr", iv$chr[i], "_", as.double(iv$position[i]), "_", iv$nea[i], "_", iv$ea[i])
 
         # IV-exp effect
-        fit <- lm(as.formula(paste0("urate.30880.0.0 ~ ", snp, " + age_at_recruitment.21022.0.0 + PC1 + PC2 + PC3 + PC4 + PC5 + PC6 + PC7 + PC8 + PC9 + PC10")), data=dat %>% dplyr::sex.31.0.0 == males)
+        fit <- lm(as.formula(paste0("urate.30880.0.0 ~ ", snp, " + age_at_recruitment.21022.0.0 + PC1 + PC2 + PC3 + PC4 + PC5 + PC6 + PC7 + PC8 + PC9 + PC10")), data=dat %>% dplyr::filter(sex.31.0.0 == !!males))
         f_exp <- summary(fit)$fstatistic[1] %>% as.numeric
         b_exp <- fit %>% tidy %>% dplyr::filter(grepl("chr",term)) %>% dplyr::pull(estimate)
         se_exp <- fit %>% tidy %>% dplyr::filter(grepl("chr",term)) %>% dplyr::pull(std.error)
 
         # IV-outcome
-        fit <- glm(as.formula(paste0("gout ~ ", snp, " + age_at_recruitment.21022.0.0 + PC1 + PC2 + PC3 + PC4 + PC5 + PC6 + PC7 + PC8 + PC9 + PC10")), data=dat %>% dplyr::sex.31.0.0 == males, family="binomial")
+        fit <- glm(as.formula(paste0("gout ~ ", snp, " + age_at_recruitment.21022.0.0 + PC1 + PC2 + PC3 + PC4 + PC5 + PC6 + PC7 + PC8 + PC9 + PC10")), data=dat %>% dplyr::filter(sex.31.0.0 == !!males), family="binomial")
         b_out <- fit %>% tidy %>% dplyr::filter(grepl("chr",term)) %>% dplyr::pull(estimate)
         se_out <- fit %>% tidy %>% dplyr::filter(grepl("chr",term)) %>% dplyr::pull(std.error)
 
