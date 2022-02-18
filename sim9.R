@@ -7,7 +7,7 @@ library("viridis")
 source("funs.R")
 set.seed(123)
 
-n_sim <- 5
+n_sim <- 50
 r2_u <- 0.05 # U-Y main effect
 r2_x <- 0.05 # X-Y main effect
 r2_xu <- r2_x * 0.5 # X-Y interaction effect half the size of the main effect
