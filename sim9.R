@@ -1,7 +1,3 @@
-# sample size (X) vs power (Y) to detect increasing fold-bias (color)
-# facet-grid with column and rows Z-X and X-Y variance explained
-# two series - continuous vs binary outcomes
-
 library("dplyr")
 library("ggplot2")
 library("grid")
@@ -61,22 +57,25 @@ for (n_obs in c(1000, 10000, 100000)){
     }
 }
 
-# power
-pwr <- results %>% dplyr::group_by(n_obs, r2_z, phi) %>% dplyr::summarize(cbind(binom.test(sum(phi_p < 0.05), n()) %>% tidy, bias=mean(bias)))
+# estimate power
+pwr <- results %>% 
+    dplyr::group_by(n_obs, r2_z, phi) %>% 
+    dplyr::summarize(cbind(binom.test(sum(phi_p < 0.05), n()) %>% tidy, bias=mean(bias))) %>%
+    as.data.frame
 
 # plot
 pwr$n_obs <- as.factor(pwr$n_obs)
-pwr$n_obs <- levels(pwr$n_obs) <- c("1000", "10,000", "100,000")
 p <- ggplot(pwr, aes(x=n_obs, y=estimate, ymin=conf.low, ymax=conf.high, color=bias)) +
     geom_line() + 
     geom_point() + 
     geom_errorbar() +
     theme_classic() + 
-    labs(x = "Sample size", y = "Power (\u03b1=5%)", color = "Fold-change") +
+    labs(x = "Sample size", y = expression(Power ~ (alpha==0.05)), color = "Fold-change") +
     scale_y_continuous(limits = c(0, 1), breaks = c(0,.25,.5,.75,1)) +
     geom_hline(yintercept = 0.8, linetype = "dashed", color = "grey") +
     geom_hline(yintercept = 0.05, linetype = "dashed", color = "grey") +
     scale_color_viridis(direction = 1) +
+    scale_x_discrete(labels = c('1000','10,000','100,000')) +
     facet_grid(phi~r2_z) +
     ggtitle("Variance explained by Z-X") +
     theme(
@@ -95,27 +94,25 @@ size = 11
 col = "black"
 
 # Convert the plot to a grob
-gt <- ggplotGrob(p)
+gt <- ggplot2::ggplotGrob(p)
 
 # Get the positions of the right strips in the layout: t = top, l = left, ...
 strip <-c(subset(gt$layout, grepl("strip-r", gt$layout$name), select = t:r))
 
 # Text grob
-text.grob = textGrob(text, rot = -90,
-   gp = gpar(fontsize = size, col = col))
+text.grob = grid::textGrob(text, rot = -90, gp = gpar(fontsize = size, col = col))
 
 # New column to the right of current strip
 # Adjusts its width to text size
 width = unit(2, "grobwidth", text.grob) + unit(1, "lines")
-gt <- gtable_add_cols(gt, width, max(strip$r))  
+gt <- gtable::gtable_add_cols(gt, width, max(strip$r))  
 
 # Add text grob to new column
-gt <- gtable_add_grob(gt, text.grob, 
+gt <- gtable::gtable_add_grob(gt, text.grob, 
         t = min(strip$t), l = max(strip$r) + 1, b = max(strip$b))
 
+pdf("sim9.pdf")
 # Draw it
 grid.newpage()
-
-pdf("sim9.pdf")
 grid.draw(gt)
 dev.off()
