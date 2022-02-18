@@ -5,7 +5,7 @@ library("viridis")
 source("funs.R")
 set.seed(123)
 
-n_sim <- 50
+n_sim <- 500
 n_obs <- 100000
 r2_z <- 0.1
 r2_x <- 0.1

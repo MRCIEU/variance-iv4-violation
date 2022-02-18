@@ -6,3 +6,5 @@
     - NOSH violation
 - Sim8
     - Monotonicity violation
+- Sim9 
+    - Power simulation for continuous outcome
