@@ -5,7 +5,7 @@ library("viridis")
 source("funs.R")
 set.seed(123)
 
-n_sim <- 500
+n_sim <- 50
 n_obs <- 100000
 r2_z <- 0.1
 r2_x <- 0.1
@@ -16,12 +16,11 @@ for (h in seq(-1, 1, .5)){
         if (h == 0 & s == 1){
             next
         }
+        # betas
+        b0 <- 0.5
+        b1 <- b0-h*s
+        b2 <- b0-s
         for (i in 1:n_sim){
-            # betas
-            b0 <- 0.5
-            b1 <- b0-h*s
-            b2 <- b0-s
-
             # genotype
             z <- get_simulated_genotypes(0.25, n_obs)
             u0 <- z==0
@@ -76,12 +75,13 @@ pdf("monotonicity-bias.pdf")
 ggplot(estimates, aes(x=h, y=estimate, ymin=conf.low, ymax=conf.high, color=-log10(phi_p.x))) +
     geom_point() + theme_classic() + geom_hline(yintercept=1, linetype="dashed", color="grey") +
     labs(y="Wald estimate (95% CI)",x="Heterozygote effect") + facet_grid(~s) +
-    scale_x_continuous(breaks=scales::pretty_breaks(n=3)) +
+    scale_x_continuous(breaks=scales::pretty_breaks(n=5)) +
     geom_errorbar() +
     labs(color="-log10(P_variance) Z-X") +
     scale_color_viridis(direction = 1) +
     theme(
             strip.background = element_blank(),
+            axis.text.x = element_text(angle = 90),
             strip.text.y = element_text(angle = 0),
             legend.position = "bottom",
             legend.background = element_blank(),
