@@ -107,4 +107,4 @@ res <- mr(mr_dat)
 res_loo <- mr_leaveoneout(mr_dat)
 
 # merge interaction analsyis
-res_loo <- merge(res_loo, exp_df %>% dplyr::select(SNP, p_int) %>% dplyr::mutate(SNP=tolower(SNP)))
+res_loo <- merge(res_loo, exp_df %>% dplyr::select(SNP, p_int, phi_p) %>% dplyr::mutate(SNP=tolower(SNP)))
