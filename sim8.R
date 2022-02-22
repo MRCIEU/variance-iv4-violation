@@ -56,6 +56,9 @@ for (h in seq(-1, 1, .5)){
             names(v_y) <- paste0(names(v_y), ".y")
             result <- cbind(v_z, v_y)
             result$b_mr <- wald$b
+            result$b0 <- b0
+            result$b1 <- b1
+            result$b2 <- b2
             result$se_mr <- wald$se_mr
             result$b <- sqrt(r2_x)
             result$h <- h
@@ -72,9 +75,9 @@ estimates <- results %>%
     dplyr::summarize(cbind(t.test(b_mr) %>% tidy, phi_p.x=mean(phi_p.x)))
 
 pdf("monotonicity-bias.pdf")
-ggplot(estimates, aes(x=h, y=estimate, ymin=conf.low, ymax=conf.high, color=-log10(phi_p.x))) +
+ggplot(estimates, aes(x=b1, y=estimate, ymin=conf.low, ymax=conf.high, color=-log10(phi_p.x))) +
     geom_point() + theme_classic() + geom_hline(yintercept=1, linetype="dashed", color="grey") +
-    labs(y="Wald estimate (95% CI)",x="Heterozygote effect") + facet_grid(~s) +
+    labs(y="Wald estimate (95% CI)",x="Heterozygote effect") + facet_grid(~b2) +
     scale_x_continuous(breaks=scales::pretty_breaks(n=5)) +
     geom_errorbar() +
     labs(color="-log10(P_variance) Z-X") +

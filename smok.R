@@ -21,10 +21,11 @@ dat <- merge(linker, pc, "appieu")
 dat <- merge(dat, pheno, by.x="app15825", by.y="eid")
 
 # SD scale outcomes
-dat$glycated_haemoglobin.30750.0.0 <- dat$glycated_haemoglobin.30750.0.0 / sd(dat$glycated_haemoglobin.30750.0.0, na.rm=T)
+dat$forced_vital_capacity_best_measure.20151.0.0 <- dat$forced_vital_capacity_best_measure.20151.0.0 / sd(dat$forced_vital_capacity_best_measure.20151.0.0, na.rm=T)
+dat$forced_expiratory_volume_best_measure.20150.0.0 <- dat$forced_expiratory_volume_best_measure.20150.0.0 / sd(dat$forced_expiratory_volume_best_measure.20150.0.0, na.rm=T)
 
 # select SNPs and extract from UKBB
-iv <- ieugwasr::tophits("ukb-d-30750_irnt")
+iv <- ieugwasr::tophits("ieu-b-25")
 for (i in 1:nrow(iv)){
     dosage <- tryCatch(
         {
