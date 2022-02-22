@@ -108,3 +108,31 @@ res_loo <- mr_leaveoneout(mr_dat)
 
 # merge interaction analsyis
 res_loo <- merge(res_loo, exp_df %>% dplyr::select(SNP, p_int, phi_p) %>% dplyr::mutate(SNP=tolower(SNP)))
+
+# plot
+res_loo$lci <- res_loo$b - (res_loo$se * 1.96)
+res_loo$uci <- res_loo$b + (res_loo$se * 1.96)
+res_loo$delta <- res_loo$b - dplyr::filter(method == "Inverse variance weighted") %>% dplyr::pull(b)
+res_loo$label <- NA
+res_loo$label[res_loo$SNP=="chr15_78806023_t_c"] <- "CHRNA3"
+pdf("smokingh_fev1.pdf")
+ggplot(res_loo, aes(x=-log10(phi_p), y=b, ymin=lci, ymax=uci, label=label)) +
+    geom_point() +
+    labs(x="Instrument-exposure variance test -log10(P)", y="IVW estimate (SD, 95% CI)") +
+    coord_flip() +
+    geom_text(nudge_y = 0.025) +
+    geom_hline(yintercept=res %>% dplyr::filter(method == "Inverse variance weighted") %>% dplyr::pull(b)) +
+    theme_classic() +
+    geom_segment(mapping=aes(x=-log10(phi_p), y=res %>% dplyr::filter(method == "Inverse variance weighted") %>% dplyr::pull(b), xend=-log10(phi_p), yend=b)) +
+    geom_rect(
+        inherit.aes = F,
+        alpha = 0.01,
+        fill="#bdbdbd",
+        aes(
+            xmin=-Inf, 
+            xmax=Inf, 
+            ymin=res %>% dplyr::mutate(lci=b-(1.96*se)) %>% dplyr::filter(method == "Inverse variance weighted") %>% dplyr::pull(lci),
+            ymax=res %>% dplyr::mutate(uci=b+(1.96*se)) %>% dplyr::filter(method == "Inverse variance weighted") %>% dplyr::pull(uci)
+        )
+    )
+dev.off()
