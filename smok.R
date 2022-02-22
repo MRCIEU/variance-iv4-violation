@@ -1,5 +1,4 @@
-load("/user/home/ml18692/projects/varGWAS-ukbb-biomarkers/data/pheno.RData")
-
+load("data/pheno.RData")
 library("ieugwasr")
 library("dplyr")
 library("ggplot2")
@@ -60,16 +59,16 @@ for (i in 1:nrow(iv)){
     v_exp <- model(dat %>% dplyr::select(number_of_cigarettes_previously_smoked_daily.2887.0.0, !!snp, sex.31.0.0, age_at_recruitment.21022.0.0, PC1, PC2, PC3, PC4, PC5, PC6, PC7, PC8, PC9, PC10) %>% tidyr::drop_na(.), snp, "number_of_cigarettes_previously_smoked_daily.2887.0.0", covar1 = covar, covar2 = covar)
 
     # interaction effect
-    fit <- lm(as.formula(paste0("glycated_haemoglobin.30750.0.0 ~ sex.31.0.0 * ", snp, " + age_at_recruitment.21022.0.0 + PC1 + PC2 + PC3 + PC4 + PC5 + PC6 + PC7 + PC8 + PC9 + PC10")), data=dat)
+    fit <- lm(as.formula(paste0("number_of_cigarettes_previously_smoked_daily.2887.0.0 ~ smoking_status.20116.0.0 *", snp, " + sex.31.0.0 + age_at_recruitment.21022.0.0 + PC1 + PC2 + PC3 + PC4 + PC5 + PC6 + PC7 + PC8 + PC9 + PC10")), data=dat)
     p_int <- fit %>% tidy %>% dplyr::filter(grepl(":",term)) %>% dplyr::pull(p.value)
 
     # IV-outcome
-    fit <- glm(as.formula(paste0("T2DM ~ ", snp, " + sex.31.0.0 + age_at_recruitment.21022.0.0 + PC1 + PC2 + PC3 + PC4 + PC5 + PC6 + PC7 + PC8 + PC9 + PC10")), data=dat, family="binomial")
+    fit <- lm(as.formula(paste0("forced_expiratory_volume_best_measure.20150.0.0 ~ ", snp, " + sex.31.0.0 + age_at_recruitment.21022.0.0 + PC1 + PC2 + PC3 + PC4 + PC5 + PC6 + PC7 + PC8 + PC9 + PC10")), data=dat)
     b_out <- fit %>% tidy %>% dplyr::filter(grepl("chr",term)) %>% dplyr::pull(estimate)
     se_out <- fit %>% tidy %>% dplyr::filter(grepl("chr",term)) %>% dplyr::pull(std.error)
 
     exp_df <- rbind(exp_df, data.frame(
-        Phenotype="glycated_haemoglobin.30750.0.0",
+        Phenotype="number_of_cigarettes_previously_smoked_daily.2887.0.0",
         SNP=snp, 
         beta=b_exp, 
         se=se_exp,
@@ -79,18 +78,18 @@ for (i in 1:nrow(iv)){
         f_exp, p_int, phi_p=v_exp$phi_p
     ))
     out_df <- rbind(out_df, data.frame(
-        Phenotype="T2DM",
+        Phenotype="forced_expiratory_volume_best_measure.20150.0.0",
         SNP=snp, 
         beta=b_out, 
         se=se_out,
         effect_allele=iv$ea[i],
         other_allele=iv$nea[i],
-        units="Log odds"
+        units="SD"
     ))
 }
 
 # check for X-Y effect modification
-glm(T2DM ~ sex.31.0.0 * glycated_haemoglobin.30750.0.0 + age_at_recruitment.21022.0.0, data=dat,family="binomial") %>% summary
+lm(forced_expiratory_volume_best_measure.20150.0.0 ~ number_of_cigarettes_previously_smoked_daily.2887.0.0 * smoking_status.20116.0.0 + sex.31.0.0 + age_at_recruitment.21022.0.0, data=dat,family="binomial") %>% summary
 
 # IV-exp
 exposure_dat <- format_data(exp_df, type="exposure")
@@ -108,4 +107,4 @@ res <- mr(mr_dat)
 res_loo <- mr_leaveoneout(mr_dat)
 
 # merge interaction analsyis
-res_loo <- merge(res_loo, exp_df %>% dplyr::select(SNP, p_int, ) %>% dplyr::mutate(SNP=tolower(SNP)))
+res_loo <- merge(res_loo, exp_df %>% dplyr::select(SNP, p_int) %>% dplyr::mutate(SNP=tolower(SNP)))

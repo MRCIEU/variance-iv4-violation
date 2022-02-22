@@ -180,6 +180,8 @@ pheno <- pheno %>% dplyr::mutate_at(c("age_at_first_live_birth.2754.0.0"), na_if
 pheno <- pheno %>% dplyr::mutate_at(c("age_at_first_live_birth.2754.0.0"), na_if, -3)
 pheno <- pheno %>% dplyr::mutate_at(c("number_of_cigarettes_previously_smoked_daily.2887.0.0"), na_if, -1)
 pheno$number_of_cigarettes_previously_smoked_daily.2887.0.0[pheno$number_of_cigarettes_previously_smoked_daily.2887.0.0 == -10] <- 0.5
+pheno <- pheno %>% dplyr::mutate(number_of_cigarettes_previously_smoked_daily.2887.0.0 = case_when(smoking_status.20116.0.0 == 0 ~ 0, smoking_status.20116.0.0 != 0 ~ number_of_cigarettes_previously_smoked_daily.2887.0.0))
+
 
 # 6150
 pheno$heart_attack.6150 <- apply(pheno[,c('vascular_heart_problems_diagnosed_by_doctor.6150.0.0', 'vascular_heart_problems_diagnosed_by_doctor.6150.0.1', 'vascular_heart_problems_diagnosed_by_doctor.6150.0.2', 'vascular_heart_problems_diagnosed_by_doctor.6150.0.3'),with=F], 1, function(x) {sum(x==1, na.rm=T)>0})
