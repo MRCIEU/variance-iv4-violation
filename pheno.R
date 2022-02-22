@@ -7,7 +7,7 @@ set.seed(1234)
 disease_id <- paste0("41270-0.", seq(0, 212))
 disease_name <- paste0("diagnoses_icd10_41270.0.", seq(0, 212))
 
-f <- "/tmp/tmp.GU8Wh7SknM/data.33352.csv"
+f <- "/tmp/tmp.xnqWEC4vUh/data.33352.csv"
 pheno <- fread(f, select=c(
         "eid",
         "31-0.0",
@@ -72,7 +72,8 @@ pheno <- fread(f, select=c(
         "50-0.0",
         "2754-0.0",
         "20150-0.0",
-        "20151-0.0"
+        "20151-0.0",
+        "2887-0.0"
     ),
     col.names=c(
         "eid", 
@@ -138,7 +139,8 @@ pheno <- fread(f, select=c(
         "standing_height.50.0.0",
         "age_at_first_live_birth.2754.0.0",
         "forced_expiratory_volume_best_measure.20150.0.0",
-        "forced_vital_capacity_best_measure.20151.0.0"
+        "forced_vital_capacity_best_measure.20151.0.0",
+        "number_of_cigarettes_previously_smoked_daily.2887.0.0"
     )
 )
 unlink(f)
@@ -176,6 +178,8 @@ pheno$water_intake.1528.0.0 <- as.double(pheno$water_intake.1528.0.0)
 pheno$water_intake.1528.0.0[pheno$water_intake.1528.0.0 == -10] <- 0.5
 pheno <- pheno %>% dplyr::mutate_at(c("age_at_first_live_birth.2754.0.0"), na_if, -4)
 pheno <- pheno %>% dplyr::mutate_at(c("age_at_first_live_birth.2754.0.0"), na_if, -3)
+pheno <- pheno %>% dplyr::mutate_at(c("number_of_cigarettes_previously_smoked_daily.2887.0.0"), na_if, -1)
+pheno$number_of_cigarettes_previously_smoked_daily.2887.0.0[pheno$number_of_cigarettes_previously_smoked_daily.2887.0.0 == -10] <- 0.5
 
 # 6150
 pheno$heart_attack.6150 <- apply(pheno[,c('vascular_heart_problems_diagnosed_by_doctor.6150.0.0', 'vascular_heart_problems_diagnosed_by_doctor.6150.0.1', 'vascular_heart_problems_diagnosed_by_doctor.6150.0.2', 'vascular_heart_problems_diagnosed_by_doctor.6150.0.3'),with=F], 1, function(x) {sum(x==1, na.rm=T)>0})

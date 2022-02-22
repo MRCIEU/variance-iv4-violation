@@ -23,6 +23,7 @@ dat <- merge(dat, pheno, by.x="app15825", by.y="eid")
 # SD scale outcomes
 dat$forced_vital_capacity_best_measure.20151.0.0 <- dat$forced_vital_capacity_best_measure.20151.0.0 / sd(dat$forced_vital_capacity_best_measure.20151.0.0, na.rm=T)
 dat$forced_expiratory_volume_best_measure.20150.0.0 <- dat$forced_expiratory_volume_best_measure.20150.0.0 / sd(dat$forced_expiratory_volume_best_measure.20150.0.0, na.rm=T)
+dat$number_of_cigarettes_previously_smoked_daily.2887.0.0 <- dat$number_of_cigarettes_previously_smoked_daily.2887.0.0 / sd(dat$number_of_cigarettes_previously_smoked_daily.2887.0.0, na.rm=T)
 
 # select SNPs and extract from UKBB
 iv <- ieugwasr::tophits("ieu-b-25")
@@ -51,12 +52,12 @@ for (i in 1:nrow(iv)){
     }
 
     # IV-exp effect
-    fit <- lm(as.formula(paste0("glycated_haemoglobin.30750.0.0 ~ ", snp, " + sex.31.0.0 + age_at_recruitment.21022.0.0 + PC1 + PC2 + PC3 + PC4 + PC5 + PC6 + PC7 + PC8 + PC9 + PC10")), data=dat)
+    fit <- lm(as.formula(paste0("number_of_cigarettes_previously_smoked_daily.2887.0.0 ~ ", snp, " + sex.31.0.0 + age_at_recruitment.21022.0.0 + PC1 + PC2 + PC3 + PC4 + PC5 + PC6 + PC7 + PC8 + PC9 + PC10")), data=dat)
     f_exp <- summary(fit)$fstatistic[1] %>% as.numeric
     b_exp <- fit %>% tidy %>% dplyr::filter(grepl("chr",term)) %>% dplyr::pull(estimate)
     se_exp <- fit %>% tidy %>% dplyr::filter(grepl("chr",term)) %>% dplyr::pull(std.error)
     covar <- c("sex.31.0.0", "age_at_recruitment.21022.0.0", "PC1", "PC2", "PC3", "PC4", "PC5", "PC6", "PC7", "PC8", "PC9", "PC10")
-    v_exp <- model(dat %>% dplyr::select(glycated_haemoglobin.30750.0.0, !!snp, sex.31.0.0, age_at_recruitment.21022.0.0, PC1, PC2, PC3, PC4, PC5, PC6, PC7, PC8, PC9, PC10) %>% tidyr::drop_na(.), snp, "glycated_haemoglobin.30750.0.0", covar1 = covar, covar2 = covar)
+    v_exp <- model(dat %>% dplyr::select(number_of_cigarettes_previously_smoked_daily.2887.0.0, !!snp, sex.31.0.0, age_at_recruitment.21022.0.0, PC1, PC2, PC3, PC4, PC5, PC6, PC7, PC8, PC9, PC10) %>% tidyr::drop_na(.), snp, "number_of_cigarettes_previously_smoked_daily.2887.0.0", covar1 = covar, covar2 = covar)
 
     # interaction effect
     fit <- lm(as.formula(paste0("glycated_haemoglobin.30750.0.0 ~ sex.31.0.0 * ", snp, " + age_at_recruitment.21022.0.0 + PC1 + PC2 + PC3 + PC4 + PC5 + PC6 + PC7 + PC8 + PC9 + PC10")), data=dat)
