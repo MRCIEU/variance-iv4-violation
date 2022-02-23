@@ -44,15 +44,13 @@ get_ivw <- function(exp_id, out_id, vgwas, q){
 wrapper <- function(trait, exp_id, out_id, label){
     vgwas <- get_variants(trait)
 
-    mr <- rbind(
-        get_ivw(exp_id, out_id, vgwas, 0.75),
-        get_ivw(exp_id, out_id, vgwas, 0.5),
-        get_ivw(exp_id, out_id, vgwas, 0.25),
-        get_ivw(exp_id, out_id, vgwas, 0.1),
-        get_ivw(exp_id, out_id, vgwas, 0.05),
-        get_ivw(exp_id, out_id, vgwas, 0.0),
-    )
-
+    mr1 <- get_ivw(exp_id, out_id, vgwas, 0.75)
+    mr2 <- get_ivw(exp_id, out_id, vgwas, 0.5)
+    mr3 <- get_ivw(exp_id, out_id, vgwas, 0.25)
+    mr4 <- get_ivw(exp_id, out_id, vgwas, 0.1)
+    mr5 <- get_ivw(exp_id, out_id, vgwas, 0.05)
+    mr6 <- get_ivw(exp_id, out_id, vgwas, 0.0)
+    mr <- rbind(mr1, mr2, mr3, mr4, mr5, mr6)
     mr$lci <- exp(mr$b - (mr$se * 1.96))
     mr$uci <- exp(mr$b + (mr$se * 1.96))
     mr$b <- exp(mr$b)
