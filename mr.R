@@ -20,4 +20,5 @@ get_ivw <- function(exp_id, out_id, vgwas, p_var=5e-8){
 }
 
 # LDL -> CVD
-ldl.cvd <- get_ivw()
+ldl_vgwas <- 
+ldl_mr <- get_ivw("ukb-d-30780_irnt", "ieu-a-7", )
