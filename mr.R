@@ -68,20 +68,29 @@ wrapper <- function(trait, exp_id, out_id, label, or=T){
     return(mr)
 }
 
-ldl <- wrapper("ldl_direct.30780.0.0", "ukb-d-30780_irnt", "ieu-a-7", "LDL-CVD")
+ldl <- wrapper("ldl_direct.30780.0.0", "ukb-d-30780_irnt", "ieu-a-7", "LDL-CAD")
 hba1c <- wrapper("glycated_haemoglobin.30750.0.0", "ukb-d-30750_irnt", "ieu-a-24", "HbA1c-T2DM")
 urate <- wrapper("urate.30880.0.0", "ukb-d-30880_irnt", "ieu-a-1055", "Urate-Gout")
 results <- rbind(ldl, hba1c, urate)
 
 # plot effects
 pdf("plot.pdf")
+results$q <- factor(results$q, levels = rev(levels(results$q)))
 ggplot(results, aes(x=q, y=b, ymin=lci, ymax=uci, color=-log10(Q_pval))) +
     geom_point() +
-    geom_errorbar() +
+    geom_errorbar(width=0.3) +
     coord_flip() +
     geom_hline(yintercept=1, linetype="dashed", color="grey") +
-    labs(y="OR (95% CI)", x="Top instrument variance effects removed") +
+    labs(y="OR (95% CI)", x="Proportion of top instrument-variance effects removed", color="-log10(P) Heterogeneity") +
     scale_color_viridis(direction = 1) +
     theme_classic() +
-    facet_grid(~trait)
+    facet_grid(~trait) +
+    theme(
+        strip.background = element_blank(),
+        strip.text.y = element_text(angle = 0),
+        legend.position = "bottom",
+        legend.background = element_blank(),
+        legend.box.background = element_rect(colour = "black"),
+        panel.spacing = unit(1, "lines")
+    )
 dev.off()
