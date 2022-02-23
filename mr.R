@@ -1,5 +1,7 @@
 library("TwoSampleMR")
+library("ieugwasr")
 library("ggplot2")
+library("viridis")
 source("funs.R")
 options(ieugwasr_api="http://64.227.44.193:8006/")
 set.seed(123)
@@ -19,7 +21,7 @@ get_ivw <- function(exp_id, out_id, vgwas, q){
     # define P-threshold using quantile
     p_var <- quantile(exposure_dat$phi_p, q)
 
-    # Select instruments if they do not have strong vQTL effects
+    # Drop top q SNPs with IV-exp variance effect
     exposure_dat <- exposure_dat %>% dplyr::filter(phi_p > !!p_var)
 
     # Get effects of instruments on outcome
@@ -39,11 +41,40 @@ get_ivw <- function(exp_id, out_id, vgwas, q){
     return(res)
 }
 
-# LDL -> CVD
-ldl_vgwas <- get_variants("ldl_direct.30780.0.0")
-ldl_mr <- rbind(
-    get_ivw("ukb-d-30780_irnt", "ieu-a-7", ldl_vgwas, 0.25),
-    get_ivw("ukb-d-30780_irnt", "ieu-a-7", ldl_vgwas, 0.10),
-    get_ivw("ukb-d-30780_irnt", "ieu-a-7", ldl_vgwas, 0.05),
-    get_ivw("ukb-d-30780_irnt", "ieu-a-7", ldl_vgwas, 0.01)
-)
+wrapper <- function(trait, exp_id, out_id, label){
+    vgwas <- get_variants(trait)
+
+    mr <- rbind(
+        get_ivw(exp_id, out_id, vgwas, 0.75),
+        get_ivw(exp_id, out_id, vgwas, 0.5),
+        get_ivw(exp_id, out_id, vgwas, 0.25),
+        get_ivw(exp_id, out_id, vgwas, 0.1),
+        get_ivw(exp_id, out_id, vgwas, 0.05),
+        get_ivw(exp_id, out_id, vgwas, 0.0),
+    )
+
+    mr$lci <- exp(mr$b - (mr$se * 1.96))
+    mr$uci <- exp(mr$b + (mr$se * 1.96))
+    mr$b <- exp(mr$b)
+    mr$trait <- label
+    mr$q <- as.factor(mr$q)
+
+    return(mr)
+}
+
+ldl <- wrapper("ldl_direct.30780.0.0", "ukb-d-30780_irnt", "ieu-a-7", "LDL-CVD")
+hba1c <- wrapper("glycated_haemoglobin.30750.0.0", "ukb-d-30750_irnt", "ieu-a-24", "HbA1C-T2DM")
+urate <- wrapper("urate.30880.0.0", "ukb-d-30880_irnt", "ieu-a-1055", "Urate-Gout")
+results <- rbind(ldl, hba1c, urate)
+
+# plot effects
+pdf("plot.pdf")
+ggplot(results, aes(x=q, y=b, ymin=lci, ymax=uci, color=-log10(Q_pval))) +
+    geom_point() +
+    geom_errorbar() +
+    coord_flip() +
+    labs(y="IVW estimate (95% CI)", x="Top instrument variance effects removed") +
+    scale_color_viridis(direction = 1) +
+    theme_classic() +
+    facet_grid(trait~)
+dev.off()
