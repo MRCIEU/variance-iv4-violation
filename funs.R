@@ -233,3 +233,58 @@ extract_variant_from_bgen <- function(chrom, pos, ref, alt){
     row.names(dosage) <- NULL
     return(dosage)
 }
+
+get_variants <- function(trait, chrs=seq(1,22)){
+    # load vGWAS & SNP stats; QC loci
+    data <- data.frame()
+
+    for (chr in chrs){
+        message(paste0("loading chr", chr))
+        if (chr < 10){
+            gwas <- fread(paste0("/user/home/ml18692/projects/varGWAS-ukbb-biomarkers/data/", trait, ".vgwas.chr0", chr, ".txt"))
+            snp_stats <- fread(paste0("/mnt/storage/private/mrcieu/data/ukbiobank/genetic/variants/arrays/imputed/released/2018-09-18/data/snp-stats/data.chr0", chr, ".snp-stats"), skip=15)
+        } else {
+            gwas <- fread(paste0("/user/home/ml18692/projects/varGWAS-ukbb-biomarkers/data/", trait, ".vgwas.chr", chr, ".txt"))
+            snp_stats <- fread(paste0("/mnt/storage/private/mrcieu/data/ukbiobank/genetic/variants/arrays/imputed/released/2018-09-18/data/snp-stats/data.chr", chr, ".snp-stats"), skip=15)
+        }
+
+        # drop multiallelics by rsid
+        counts <- table(snp_stats$rsid)
+        ma <- as.data.frame(counts[which(counts>1)])
+        snp_stats <- snp_stats[!snp_stats$rsid %in% ma$Var1]
+
+        # drop multiallelics by position
+        counts <- table(snp_stats$position)
+        ma <- as.data.frame(counts[which(counts>1)])
+        snp_stats <- snp_stats[!snp_stats$position %in% ma$Var1]
+        
+        # exclude MAF < q
+        #snp_stats <- snp_stats[which(snp_stats$minor_allele_frequency > 0.05)]
+        
+        # exclude HWE violations
+        snp_stats <- snp_stats[which(snp_stats$HW_exact_p_value > 1e-5)]
+
+        # exclude high missingness
+        snp_stats <- snp_stats[which(snp_stats$missing_proportion < 0.05)]
+
+        # exclude low imputation quality
+        snp_stats <- snp_stats[which(snp_stats$info > 0.3)]
+
+        # drop HLA region with 10Mb pad
+        snp_stats <- snp_stats[!(snp_stats$chromosome == 6 & snp_stats$position >= (28477797-5000000) & snp_stats$position <= 33448354+5000000),]
+
+        # drop vGWAS failed rows
+        gwas <- gwas %>% dplyr::filter(phi_p != -1)
+
+        # merge/filter vGWAS
+        snp_stats$key <- paste0(snp_stats$chromosome, "_", snp_stats$position, "_", snp_stats$alleleA, "_", snp_stats$alleleB)
+        snp_stats$rsid <- NULL
+        gwas$key <- paste0(gwas$chr, "_", gwas$pos, "_", gwas$oa, "_", gwas$ea)
+        gwas <- merge(gwas, snp_stats, "key")
+
+        # store results
+        data <- rbind(data, gwas)
+    }
+
+    return(data)
+}
