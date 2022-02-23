@@ -41,7 +41,7 @@ get_ivw <- function(exp_id, out_id, vgwas, q){
     return(res)
 }
 
-wrapper <- function(trait, exp_id, out_id, label){
+wrapper <- function(trait, exp_id, out_id, label, or=T){
     vgwas <- get_variants(trait)
 
     mr1 <- get_ivw(exp_id, out_id, vgwas, 0.75)
@@ -50,10 +50,18 @@ wrapper <- function(trait, exp_id, out_id, label){
     mr4 <- get_ivw(exp_id, out_id, vgwas, 0.1)
     mr5 <- get_ivw(exp_id, out_id, vgwas, 0.05)
     mr6 <- get_ivw(exp_id, out_id, vgwas, 0.0)
+
     mr <- rbind(mr1, mr2, mr3, mr4, mr5, mr6)
-    mr$lci <- exp(mr$b - (mr$se * 1.96))
-    mr$uci <- exp(mr$b + (mr$se * 1.96))
-    mr$b <- exp(mr$b)
+
+    mr$lci <- mr$b - (mr$se * 1.96)
+    mr$uci <- mr$b + (mr$se * 1.96)
+
+    if (or){
+        mr$b <- exp(mr$b)
+        mr$lci <- exp(mr$lci)
+        mr$uci <- exp(mr$uci)
+    }
+    
     mr$trait <- label
     mr$q <- as.factor(mr$q)
 
@@ -61,7 +69,7 @@ wrapper <- function(trait, exp_id, out_id, label){
 }
 
 ldl <- wrapper("ldl_direct.30780.0.0", "ukb-d-30780_irnt", "ieu-a-7", "LDL-CVD")
-hba1c <- wrapper("glycated_haemoglobin.30750.0.0", "ukb-d-30750_irnt", "ieu-a-24", "HbA1C-T2DM")
+hba1c <- wrapper("glycated_haemoglobin.30750.0.0", "ukb-d-30750_irnt", "ieu-a-24", "HbA1c-T2DM")
 urate <- wrapper("urate.30880.0.0", "ukb-d-30880_irnt", "ieu-a-1055", "Urate-Gout")
 results <- rbind(ldl, hba1c, urate)
 
@@ -71,8 +79,9 @@ ggplot(results, aes(x=q, y=b, ymin=lci, ymax=uci, color=-log10(Q_pval))) +
     geom_point() +
     geom_errorbar() +
     coord_flip() +
-    labs(y="IVW estimate (95% CI)", x="Top instrument variance effects removed") +
+    geom_hline(yintercept=1, linetype="dashed", color="grey") +
+    labs(y="OR (95% CI)", x="Top instrument variance effects removed") +
     scale_color_viridis(direction = 1) +
     theme_classic() +
-    facet_grid(trait~)
+    facet_grid(~trait)
 dev.off()
