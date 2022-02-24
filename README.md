@@ -1,19 +1,17 @@
-# Measuring violation of MR IV4 assumptions using variance effects
+# Measuring NOSH violation using IV-exposure variance effects
 
 ## Simulations
 
-- Sim7
+- sim7
     - NOSH violation
-- Sim8
+- sim8
     - Monotonicity violation
-- Sim9 
+- sim9 
     - Power simulation for continuous outcome
-- Sim10
-    - Power simulation for binary outcome
+- sim10
+    - Multi-SNP MR simulation
 
-## UK Biobank analysis
-
-### Phenotypes
+## Phenotypes
 
 Copy pheno file to ramdisk
 
@@ -30,3 +28,16 @@ Extract phenotypes
 module load languages/r/3.6.0
 Rscript pheno.R
 ```
+
+## UK Biobank analysis
+
+- smok
+    - Smoking positive control
+- mr
+    - MR effects using instruments stratified by IV-exp effects
+- pleiotropy
+    - Effect of pleiotropy and LD with causal variant on IV-exp variance effects
+- dag
+    - Causal diagram for lung function positive control
+- urate-gout
+    - sex-stratified effect of urate on gout
