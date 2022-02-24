@@ -31,13 +31,13 @@ Rscript pheno.R
 
 ## UK Biobank analysis
 
+- dag
+    - Causal diagram for lung function positive control
 - smok
     - Smoking positive control
 - mr
     - MR effects using instruments stratified by IV-exp effects
 - pleiotropy
     - Effect of pleiotropy and LD with causal variant on IV-exp variance effects
-- dag
-    - Causal diagram for lung function positive control
 - urate-gout
     - sex-stratified effect of urate on gout

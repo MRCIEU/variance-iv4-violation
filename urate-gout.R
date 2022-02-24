@@ -20,15 +20,12 @@ pc <- get_genetic_principal_components()
 dat <- merge(linker, pc, "appieu")
 dat <- merge(dat, pheno, by.x="app15825", by.y="eid")
 
-# SD scale outcomes
-dat$urate.30880.0.0 <- dat$urate.30880.0.0 / sd(dat$urate.30880.0.0, na.rm=T)
-
 # get sex-stratified urate GWAS from Neale et al
-download.file("https://broad-ukb-sumstats-us-east-1.s3.amazonaws.com/round2/additive-tsvs/30880_irnt.gwas.imputed_v3.female.varorder.tsv.bgz", "data/30880_irnt.gwas.imputed_v3.female.varorder.txt.gz")
+#download.file("https://broad-ukb-sumstats-us-east-1.s3.amazonaws.com/round2/additive-tsvs/30880_irnt.gwas.imputed_v3.female.varorder.tsv.bgz", "data/30880_irnt.gwas.imputed_v3.female.varorder.txt.gz")
 female <- fread("data/30880_irnt.gwas.imputed_v3.female.varorder.txt.gz")
-download.file("https://broad-ukb-sumstats-us-east-1.s3.amazonaws.com/round2/additive-tsvs/30880_irnt.gwas.imputed_v3.male.varorder.tsv.bgz", "data/30880_irnt.gwas.imputed_v3.male.varorder.txt.gz")
+#download.file("https://broad-ukb-sumstats-us-east-1.s3.amazonaws.com/round2/additive-tsvs/30880_irnt.gwas.imputed_v3.male.varorder.tsv.bgz", "data/30880_irnt.gwas.imputed_v3.male.varorder.txt.gz")
 male <- fread("data/30880_irnt.gwas.imputed_v3.male.varorder.txt.gz")
-download.file("https://broad-ukb-sumstats-us-east-1.s3.amazonaws.com/round2/annotations/variants.tsv.bgz", "data/variants.txt.gz")
+#download.file("https://broad-ukb-sumstats-us-east-1.s3.amazonaws.com/round2/annotations/variants.tsv.bgz", "data/variants.txt.gz")
 anno <- fread("data/variants.txt.gz", select=c("variant", "rsid", "chr", "pos", "ref", "alt", "AF"))
 female <- merge(female, anno, "variant")
 male <- merge(male, anno, "variant")
@@ -86,25 +83,29 @@ get_estimates <- function(iv, sex){
     # test for SNP effects
     exp_df <- data.frame()
     out_df <- data.frame()
+    # stratify by sex
+    datstrat <- dat %>% dplyr::filter(sex.31.0.0 == !!sex)
+    # SD scale outcomes
+    datstrat$urate.30880.0.0 <- datstrat$urate.30880.0.0 / sd(datstrat$urate.30880.0.0, na.rm=T)
     for (i in 1:nrow(iv)){
-        snp <- paste0("chr", iv$chr[i], "_", as.double(iv$position[i]), "_", iv$nea[i], "_", iv$ea[i])
+        snp <- paste0("chr", iv$chr.exposure[i], "_", as.double(iv$pos.exposure[i]), "_", iv$other_allele.exposure[i], "_", iv$effect_allele.exposure[i])
 
         if (!snp %in% names(dat)){
             next
         }
 
         # IV-exp mean
-        fit <- lm(as.formula(paste0("urate.30880.0.0 ~ ", snp, " + age_at_recruitment.21022.0.0 + PC1 + PC2 + PC3 + PC4 + PC5 + PC6 + PC7 + PC8 + PC9 + PC10")), data=dat %>% dplyr::filter(sex.31.0.0 == !!sex))
+        fit <- lm(as.formula(paste0("urate.30880.0.0 ~ ", snp, " + age_at_recruitment.21022.0.0 + PC1 + PC2 + PC3 + PC4 + PC5 + PC6 + PC7 + PC8 + PC9 + PC10")), data=datstrat)
         f_exp <- summary(fit)$fstatistic[1] %>% as.numeric
         b_exp <- fit %>% tidy %>% dplyr::filter(grepl("chr",term)) %>% dplyr::pull(estimate)
         se_exp <- fit %>% tidy %>% dplyr::filter(grepl("chr",term)) %>% dplyr::pull(std.error)
 
         # IV-exp variance
         covar <- c("age_at_recruitment.21022.0.0", "PC1", "PC2", "PC3", "PC4", "PC5", "PC6", "PC7", "PC8", "PC9", "PC10")
-        v_exp <- model(dat %>% dplyr::filter(sex.31.0.0 == !!sex) %>% dplyr::select(urate.30880.0.0, !!snp, age_at_recruitment.21022.0.0, PC1, PC2, PC3, PC4, PC5, PC6, PC7, PC8, PC9, PC10) %>% tidyr::drop_na(.), snp, "urate.30880.0.0", covar1 = covar, covar2 = covar)
+        v_exp <- model(datstrat %>% dplyr::select(urate.30880.0.0, !!snp, age_at_recruitment.21022.0.0, PC1, PC2, PC3, PC4, PC5, PC6, PC7, PC8, PC9, PC10) %>% tidyr::drop_na(.), snp, "urate.30880.0.0", covar1 = covar, covar2 = covar)
 
         # IV-outcome
-        fit <- glm(as.formula(paste0("gout ~ ", snp, " + age_at_recruitment.21022.0.0 + PC1 + PC2 + PC3 + PC4 + PC5 + PC6 + PC7 + PC8 + PC9 + PC10")), data=dat %>% dplyr::filter(sex.31.0.0 == !!sex), family="binomial")
+        fit <- glm(as.formula(paste0("gout ~ ", snp, " + age_at_recruitment.21022.0.0 + PC1 + PC2 + PC3 + PC4 + PC5 + PC6 + PC7 + PC8 + PC9 + PC10")), data=datstrat, family="binomial")
         b_out <- fit %>% tidy %>% dplyr::filter(grepl("chr",term)) %>% dplyr::pull(estimate)
         se_out <- fit %>% tidy %>% dplyr::filter(grepl("chr",term)) %>% dplyr::pull(std.error)
 
