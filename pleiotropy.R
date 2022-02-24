@@ -1,6 +1,6 @@
 library("dplyr")
 library("broom")
-library("genetics")
+library("GWASTools")
 source("funs.R")
 set.seed(123)
 
@@ -98,20 +98,28 @@ for (alpha in c(0, 1)){
 
 # LD with causal variant
 results <- data.frame()
-for (rho in seq(0, 1, .2)){
-    for (i in 1:n_sim){
-        z1_r2 <- 0.05
-        q1 <- 0.1; p1 <- 1-q1; v1 <- 2*p1*q1
-        q2 <- 0.25; p2 <- 1-q2; v2 <- 2*p2*q2
-        z1_b <- sqrt(z1_r2/v1)
-        # simulate SNPs
-        z <- rcorrbinom(n_obs, size = 2, q1, q2, corr = rho)
-        # simulate exposure
-        x <- z[1,]*z1_b + rnorm(n_obs, sd=sqrt(1-z1_r2))
-        # test for variance effect
-        phi_p1 <- model(data.frame(z=z[1,], x), "z", "x")$phi_p
-        phi_p2 <- model(data.frame(z=z[2,], x), "z", "x")$phi_p
-        # store result
-        results <- rbind(results, data.frame(rho, phi_p1, phi_p2))
-    }
+for (i in 1:n_sim){
+    # correlation between Z1 and Z2
+    rho <- 0.4
+    # varaince explained by Z1-X
+    z1_r2 <- 0.05
+    # simulate SNPs
+    q1 <- 0.1; p1 <- 1-q1; v1 <- 2*p1*q1
+    q2 <- 0.25; p2 <- 1-q2; v2 <- 2*p2*q2
+    z1_b <- sqrt(z1_r2/v1)
+    z <- rcorrbinom(n_obs, size = 2, q1, q2, corr = rho)
+    # simulate exposure with Z1-X main effect
+    x <- z[1,]*z1_b + rnorm(n_obs, sd=sqrt(1-z1_r2))
+    # test for Z1-X and Z2-X variance effects
+    phi_p1 <- model(data.frame(z=z[1,], x), "z", "x")$phi_p
+    phi_p2 <- model(data.frame(z=z[2,], x), "z", "x")$phi_p
+    # store result
+    results <- rbind(results, data.frame(rho, phi_p1, phi_p2))
 }
+# QQplot
+pdf("qq1.pdf")
+GWASTools::qqPlot(results$phi_p1)
+dev.off()
+pdf("qq2.pdf")
+GWASTools::qqPlot(results$phi_p2)
+dev.off()
