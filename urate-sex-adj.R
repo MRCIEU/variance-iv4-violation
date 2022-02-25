@@ -52,19 +52,22 @@ for (i in 1:nrow(exposure_dat)){
 # test for IV effect on urate variance w/wo adjusting for by-sex effect
 results <- data.frame()
 for (i in 1:nrow(exposure_dat)){
-    # define SNP & int term
+    # define SNP
     snp <- paste0("chr", exposure_dat$chr.exposure[i], "_", as.double(exposure_dat$pos.exposure[i]), "_", exposure_dat$other_allele.exposure[i], "_", exposure_dat$effect_allele.exposure[i])
-    dat$gxs <- dat[[snp]] * dat$sex.31.0.0
-    # fit wo by-sex effect
+    # all
     covar <- c("age_at_recruitment.21022.0.0", "sex.31.0.0", "PC1", "PC2", "PC3", "PC4", "PC5", "PC6", "PC7", "PC8", "PC9", "PC10")
-    fit0 <- varGWASR::model(dat %>% dplyr::select(!!covar, snp, "urate.30880.0.0") %>% tidyr::drop_na(.), snp, "urate.30880.0.0", covar1 = covar, covar2 = covar)
-    # fit w by-sex effect
-    covar <- c(covar, "gxs")
-    fit1 <- varGWASR::model(dat %>% dplyr::select(!!covar, snp, "urate.30880.0.0") %>% tidyr::drop_na(.), snp, "urate.30880.0.0", covar1 = covar, covar2 = covar)
+    fit_all <- varGWASR::model(dat %>% dplyr::select(!!covar, snp, "urate.30880.0.0") %>% tidyr::drop_na(.), snp, "urate.30880.0.0", covar1 = covar, covar2 = covar)
+    # males
+    covar <- c("age_at_recruitment.21022.0.0", "PC1", "PC2", "PC3", "PC4", "PC5", "PC6", "PC7", "PC8", "PC9", "PC10")
+    fit_m <- varGWASR::model(dat %>% dplyr::filter(sex.31.0.0==1) %>% dplyr::select(!!covar, snp, "urate.30880.0.0") %>% tidyr::drop_na(.), snp, "urate.30880.0.0", covar1 = covar, covar2 = covar)
+    # females
+    covar <- c("age_at_recruitment.21022.0.0", "PC1", "PC2", "PC3", "PC4", "PC5", "PC6", "PC7", "PC8", "PC9", "PC10")
+    fit_f <- varGWASR::model(dat %>% dplyr::filter(sex.31.0.0==0) %>% dplyr::select(!!covar, snp, "urate.30880.0.0") %>% tidyr::drop_na(.), snp, "urate.30880.0.0", covar1 = covar, covar2 = covar)
     # store result
-    names(fit0) <- paste0(names(fit0), ".m")
-    names(fit1) <- paste0(names(fit1), ".i")
-    result <- cbind(fit0, fit1)
+    names(fit_all) <- paste0(names(fit_all), ".all")
+    names(fit_m) <- paste0(names(fit_m), ".males")
+    names(fit_f) <- paste0(names(fit_f), ".females")
+    result <- cbind(fit_all, fit_m, fit_f)
     result$snp <- snp
     results <- rbind(results, result)
 }
