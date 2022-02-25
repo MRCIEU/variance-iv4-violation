@@ -79,7 +79,7 @@ for (i in 1:nrow(iv)){
     }
 }
 
-get_estimates <- function(iv, sex){
+get_estimates <- function(iv, sex, dat){
     # test for SNP effects
     exp_df <- data.frame()
     out_df <- data.frame()
@@ -88,7 +88,7 @@ get_estimates <- function(iv, sex){
     # SD scale outcomes
     datstrat$urate.30880.0.0 <- datstrat$urate.30880.0.0 / sd(datstrat$urate.30880.0.0, na.rm=T)
     for (i in 1:nrow(iv)){
-        snp <- paste0("chr", iv$chr.exposure[i], "_", as.double(iv$pos.exposure[i]), "_", iv$other_allele.exposure[i], "_", iv$effect_allele.exposure[i])
+        snp <- paste0("chr", iv$chr[i], "_", as.double(iv$pos[i]), "_", iv$nea[i], "_", iv$ea[i])
 
         if (!snp %in% names(dat)){
             next
@@ -101,8 +101,8 @@ get_estimates <- function(iv, sex){
         se_exp <- fit %>% tidy %>% dplyr::filter(grepl("chr",term)) %>% dplyr::pull(std.error)
 
         # IV-exp variance
-        covar <- c("age_at_recruitment.21022.0.0", "PC1", "PC2", "PC3", "PC4", "PC5", "PC6", "PC7", "PC8", "PC9", "PC10")
-        v_exp <- model(datstrat %>% dplyr::select(urate.30880.0.0, !!snp, age_at_recruitment.21022.0.0, PC1, PC2, PC3, PC4, PC5, PC6, PC7, PC8, PC9, PC10) %>% tidyr::drop_na(.), snp, "urate.30880.0.0", covar1 = covar, covar2 = covar)
+        #covar <- c("age_at_recruitment.21022.0.0", "PC1", "PC2", "PC3", "PC4", "PC5", "PC6", "PC7", "PC8", "PC9", "PC10")
+        #v_exp <- model(datstrat %>% dplyr::select(urate.30880.0.0, !!snp, age_at_recruitment.21022.0.0, PC1, PC2, PC3, PC4, PC5, PC6, PC7, PC8, PC9, PC10) %>% tidyr::drop_na(.), snp, "urate.30880.0.0", covar1 = covar, covar2 = covar)
 
         # IV-outcome
         fit <- glm(as.formula(paste0("gout ~ ", snp, " + age_at_recruitment.21022.0.0 + PC1 + PC2 + PC3 + PC4 + PC5 + PC6 + PC7 + PC8 + PC9 + PC10")), data=datstrat, family="binomial")
@@ -117,7 +117,7 @@ get_estimates <- function(iv, sex){
             effect_allele=iv$ea[i],
             other_allele=iv$nea[i],
             units="SD",
-            f_exp, phi_p=v_exp$phi_p
+            f_exp
         ))
         out_df <- rbind(out_df, data.frame(
             Phenotype="Gout",
@@ -141,4 +141,6 @@ get_estimates <- function(iv, sex){
 
     # Perform MR
     res <- mr(mr_dat)
+
+    return(res)
 }
