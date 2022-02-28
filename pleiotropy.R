@@ -96,7 +96,7 @@ for (alpha in c(0, 1)){
     }
 }
 
-# LD with causal variant
+# phantom vQTL
 results <- data.frame()
 for (i in 1:n_sim){
     # correlation between Z1 and Z2
@@ -123,3 +123,21 @@ dev.off()
 pdf("qq2.pdf")
 GWASTools::qqPlot(results$phi_p2)
 dev.off()
+
+# Z-X horizontal pleiotropy
+results <- data.frame()
+for (alpha in c(0, 1)){
+    for (i in 1:n_sim){
+        c <- rnorm(n_obs)
+        z <- get_simulated_genotypes(q, n_obs)
+        x1 <- z*1 + c + rnorm(n_obs)
+        x2 <- z*2 + c + rnorm(n_obs)
+        x3 <- z*3 + c + rnorm(n_obs)
+        x <- x1*5 + x2*75 + x3*3 + rnorm(n_obs)
+        f_exp <- summary(lm(x ~ z))$fstatistic[1] %>% as.numeric
+        v <- model(data.frame(x, z), "z", "x")
+        results <- rbind(results, data.frame(
+            phi_p=v$phi_p, f_exp
+        ))
+    }
+}

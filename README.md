@@ -10,6 +10,8 @@
     - Power simulation for continuous outcome
 - sim10
     - Multi-SNP MR simulation
+- pleiotropy
+    - Explore the effect of horizonal pleiotropy on IV-exposure variance effects (which does not cause T1E inflation)
 
 ## Phenotypes
 
