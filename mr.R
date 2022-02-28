@@ -6,7 +6,18 @@ source("funs.R")
 options(ieugwasr_api="http://64.227.44.193:8006/")
 set.seed(123)
 
-get_ivw <- function(exp_id, out_id, vgwas, q){
+# Taken from https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5446088/#E1
+Isq = function(y,s){
+    k = length(y)
+    w = 1/s^2; sum.w = sum(w)
+    mu.hat = sum(y*w)/sum.w
+    Q = sum(w*(y-mu.hat)^2)
+    Isq = (Q - (k-1))/Q
+    Isq = max(0,Isq)
+    return(Isq)
+}
+
+get_mr <- function(exp_id, out_id, vgwas, q){
     # Get instruments
     exposure_dat <- extract_instruments(exp_id)
 
@@ -33,8 +44,8 @@ get_ivw <- function(exp_id, out_id, vgwas, q){
     stopifnot(all(dat$other_allele.exposure == dat$other_allele.outcome))
 
     # Perform MR
-    res <- mr(dat, method_list=c("mr_ivw"))
-    res <- cbind(res, mr_heterogeneity(dat, method_list=c("mr_ivw"))[6:8])
+    res <- mr(dat, method_list=c("mr_egger_regression"))
+    res$Isq <- Isq(dat$beta.exposure/dat$se.outcome,dat$se.exposure/dat$se.outcome)
     res$p_var <- p_var
     res$q <- q
 
@@ -44,12 +55,12 @@ get_ivw <- function(exp_id, out_id, vgwas, q){
 wrapper <- function(trait, exp_id, out_id, label, or=T){
     vgwas <- get_variants(trait)
 
-    mr1 <- get_ivw(exp_id, out_id, vgwas, 0.75)
-    mr2 <- get_ivw(exp_id, out_id, vgwas, 0.5)
-    mr3 <- get_ivw(exp_id, out_id, vgwas, 0.25)
-    mr4 <- get_ivw(exp_id, out_id, vgwas, 0.1)
-    mr5 <- get_ivw(exp_id, out_id, vgwas, 0.05)
-    mr6 <- get_ivw(exp_id, out_id, vgwas, 0.0)
+    mr1 <- get_mr(exp_id, out_id, vgwas, 0.75)
+    mr2 <- get_mr(exp_id, out_id, vgwas, 0.5)
+    mr3 <- get_mr(exp_id, out_id, vgwas, 0.25)
+    mr4 <- get_mr(exp_id, out_id, vgwas, 0.1)
+    mr5 <- get_mr(exp_id, out_id, vgwas, 0.05)
+    mr6 <- get_mr(exp_id, out_id, vgwas, 0.0)
 
     mr <- rbind(mr1, mr2, mr3, mr4, mr5, mr6)
 
