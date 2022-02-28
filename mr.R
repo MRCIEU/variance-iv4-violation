@@ -19,10 +19,12 @@ get_ivw <- function(exp_id, out_id, vgwas, q){
     )
 
     # define P-threshold using quantile
-    p_var <- quantile(exposure_dat$phi_p, q)
+    #p_var <- quantile(exposure_dat$phi_p, q)
+    p_var <- quantile(exposure_dat$pval.exposure, q)
 
     # Drop top q SNPs with IV-exp variance effect
-    exposure_dat <- exposure_dat %>% dplyr::filter(phi_p > !!p_var)
+    #exposure_dat <- exposure_dat %>% dplyr::filter(phi_p >= !!p_var)
+    exposure_dat <- exposure_dat %>% dplyr::filter(pval.exposure >= !!p_var)
 
     # Get effects of instruments on outcome
     outcome_dat <- extract_outcome_data(snps=exposure_dat$SNP, outcomes=out_id, proxies = F)
@@ -84,7 +86,7 @@ ggplot(results, aes(x=q, y=b, ymin=lci, ymax=uci, color=-log10(Q_pval))) +
     labs(y="OR (95% CI)", x="Proportion of top instrument-variance effects removed", color="-log10(P) Heterogeneity") +
     scale_color_viridis(direction = 1) +
     theme_classic() +
-    facet_grid(~trait) +
+    facet_grid(~trait, scales="free_x") +
     theme(
         strip.background = element_blank(),
         strip.text.y = element_text(angle = 0),
