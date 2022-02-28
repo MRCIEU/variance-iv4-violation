@@ -19,12 +19,10 @@ get_ivw <- function(exp_id, out_id, vgwas, q){
     )
 
     # define P-threshold using quantile
-    #p_var <- quantile(exposure_dat$phi_p, q)
-    p_var <- quantile(exposure_dat$pval.exposure, q)
+    p_var <- quantile(exposure_dat$phi_p, q)
 
     # Drop top q SNPs with IV-exp variance effect
-    #exposure_dat <- exposure_dat %>% dplyr::filter(phi_p >= !!p_var)
-    exposure_dat <- exposure_dat %>% dplyr::filter(pval.exposure >= !!p_var)
+    exposure_dat <- exposure_dat %>% dplyr::filter(phi_p >= !!p_var)
 
     # Get effects of instruments on outcome
     outcome_dat <- extract_outcome_data(snps=exposure_dat$SNP, outcomes=out_id, proxies = F)
