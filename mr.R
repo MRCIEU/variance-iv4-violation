@@ -87,12 +87,12 @@ results <- rbind(ldl, hba1c, urate)
 # plot effects
 pdf("plot.pdf")
 results$q <- factor(results$q, levels = rev(levels(results$q)))
-ggplot(results, aes(x=q, y=b, ymin=lci, ymax=uci, color=-log10(Q_pval))) +
+ggplot(results, aes(x=q, y=b, ymin=lci, ymax=uci, color=Isq)) +
     geom_point() +
     geom_errorbar(width=0.3) +
     coord_flip() +
     geom_hline(yintercept=1, linetype="dashed", color="grey") +
-    labs(y="OR (95% CI)", x="Proportion of top instrument-variance effects removed", color="-log10(P) Heterogeneity") +
+    labs(y="OR (95% CI)", x="Proportion of top instrument-variance effects removed", color="I^2GX") +
     scale_color_viridis(direction = 1) +
     theme_classic() +
     facet_grid(~trait, scales="free_x") +
