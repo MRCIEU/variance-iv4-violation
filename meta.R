@@ -52,6 +52,6 @@ fev1 <- get_meta("ieu-b-25", "ukb-b-19657", cigarettes_per_day)
 fvc <- get_meta("ieu-b-25", "ukb-b-7953", cigarettes_per_day)
 ldl <- get_meta("ukb-d-30780_irnt", "ieu-a-7", ldl_vgwas)
 glucose <- get_meta("ukb-d-30740_irnt", "ieu-a-24", glucose_vgwas)
-urate <- get_meta("ukb-d-30880_irnt", "ieu-a-1055", ldl_vgwas)
+urate <- get_meta("ukb-d-30880_irnt", "ieu-a-1055", urate_vgwas)
 
 # plots
