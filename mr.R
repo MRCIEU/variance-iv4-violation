@@ -107,11 +107,8 @@ glucose <- wrapper(glucose_vgwas, "ukb-d-30740_irnt", "ieu-a-24", "Glucose-T2DM"
 urate <- wrapper(urate_vgwas, "ukb-d-30880_irnt", "ieu-a-1055", "Urate-Gout")
 results <- rbind(fev1, fvc, ldl, glucose, urate)
 
-# TODO include smoking heaviness on lung function
-# TODO perform IVW for vQTL vs QTL, meta-analyse results and test for heterogeneity (threshold with alpha 0.05)
-
-# plot effects
-pdf("plot.pdf")
+# plot binary outcomes
+pdf("binary.pdf")
 results$q <- factor(results$q, levels = rev(levels(results$q)))
 ggplot(results, aes(x=q, y=b, ymin=lci, ymax=uci, color=-log10(w_all_diff))) +
     geom_point() +
@@ -119,6 +116,27 @@ ggplot(results, aes(x=q, y=b, ymin=lci, ymax=uci, color=-log10(w_all_diff))) +
     coord_flip() +
     geom_hline(yintercept=1, linetype="dashed", color="grey") +
     labs(y="OR (95% CI)", x="Proportion of top instrument-variance effects removed", color="Mann-Whitney test -log10(P) for weak instrument bias") +
+    theme_classic() +
+    facet_grid(~trait, scales="free_x") +
+    theme(
+        strip.background = element_blank(),
+        strip.text.y = element_text(angle = 0),
+        legend.position = "bottom",
+        legend.background = element_blank(),
+        legend.box.background = element_rect(colour = "black"),
+        panel.spacing = unit(1, "lines")
+    )
+dev.off()
+
+# plot continuous outcomes
+pdf("cont.pdf")
+results$q <- factor(results$q, levels = rev(levels(results$q)))
+ggplot(results, aes(x=q, y=b, ymin=lci, ymax=uci, color=-log10(w_all_diff))) +
+    geom_point() +
+    geom_errorbar(width=0.3) +
+    coord_flip() +
+    geom_hline(yintercept=0, linetype="dashed", color="grey") +
+    labs(y="SD (95% CI)", x="Proportion of top instrument-variance effects removed", color="Mann-Whitney test -log10(P) for weak instrument bias") +
     theme_classic() +
     facet_grid(~trait, scales="free_x") +
     theme(
