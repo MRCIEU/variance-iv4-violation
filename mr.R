@@ -93,16 +93,19 @@ wrapper <- function(vgwas, exp_id, out_id, label, or=T){
     return(mr)
 }
 
+cigarettes_per_day <- read.table("data/number_of_cigarettes_previously_smoked_daily.2887.0.0_iv_variance.txt")
 ldl_vgwas <- get_variants("ldl_direct.30780.0.0")
-hba1c_vgwas <- get_variants("glycated_haemoglobin.30750.0.0")
+#hba1c_vgwas <- get_variants("glycated_haemoglobin.30750.0.0")
 glucose_vgwas <- get_variants("glucose.30740.0.0")
 urate_vgwas <- get_variants("urate.30880.0.0")
 
+fev1 <- wrapper(cigarettes_per_day, "ieu-b-25", "ukb-b-19657", "Smoking heaviness-FEV1", or=F)
+fvc <- wrapper(cigarettes_per_day, "ieu-b-25", "ukb-b-7953", "Smoking heaviness-FVC", or=F)
 ldl <- wrapper(ldl_vgwas, "ukb-d-30780_irnt", "ieu-a-7", "LDL-CAD")
-hba1c <- wrapper(hba1c_vgwas, "ukb-d-30750_irnt", "ieu-a-24", "HbA1c-T2DM")
+#hba1c <- wrapper(hba1c_vgwas, "ukb-d-30750_irnt", "ieu-a-24", "HbA1c-T2DM")
 glucose <- wrapper(glucose_vgwas, "ukb-d-30740_irnt", "ieu-a-24", "Glucose-T2DM")
 urate <- wrapper(urate_vgwas, "ukb-d-30880_irnt", "ieu-a-1055", "Urate-Gout")
-results <- rbind(ldl, glucose, urate)
+results <- rbind(fev1, fvc, ldl, glucose, urate)
 
 # TODO include smoking heaviness on lung function
 # TODO perform IVW for vQTL vs QTL, meta-analyse results and test for heterogeneity (threshold with alpha 0.05)
@@ -115,7 +118,7 @@ ggplot(results, aes(x=q, y=b, ymin=lci, ymax=uci, color=-log10(w_all_diff))) +
     geom_errorbar(width=0.3) +
     coord_flip() +
     geom_hline(yintercept=1, linetype="dashed", color="grey") +
-    labs(y="OR (95% CI)", x="Proportion of top instrument-variance effects removed", color="Mann-Whitney test -log10(P) for weak instrument enrichment") +
+    labs(y="OR (95% CI)", x="Proportion of top instrument-variance effects removed", color="Mann-Whitney test -log10(P) for weak instrument bias") +
     theme_classic() +
     facet_grid(~trait, scales="free_x") +
     theme(
