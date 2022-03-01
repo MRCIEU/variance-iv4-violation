@@ -7,7 +7,7 @@ source("funs.R")
 options(ieugwasr_api="http://64.227.44.193:8006/")
 set.seed(123)
 
-get_mr <- function(exp_id, out_id, vgwas, p_threshold=0.05){
+get_meta <- function(exp_id, out_id, vgwas, p_threshold=0.05){
     # Get instruments
     exposure_dat <- extract_instruments(exp_id)
 
@@ -46,3 +46,12 @@ cigarettes_per_day <- read.table("data/number_of_cigarettes_previously_smoked_da
 ldl_vgwas <- get_variants("ldl_direct.30780.0.0")
 glucose_vgwas <- get_variants("glucose.30740.0.0")
 urate_vgwas <- get_variants("urate.30880.0.0")
+
+# estimate meta-analysis of IVW estimates for IV-exp h0 vs h1
+fev1 <- get_meta("ieu-b-25", "ukb-b-19657", cigarettes_per_day)
+fvc <- get_meta("ieu-b-25", "ukb-b-7953", cigarettes_per_day)
+ldl <- get_meta("ukb-d-30780_irnt", "ieu-a-7", ldl_vgwas)
+glucose <- get_meta("ukb-d-30740_irnt", "ieu-a-24", glucose_vgwas)
+urate <- get_meta("ukb-d-30880_irnt", "ieu-a-1055", ldl_vgwas)
+
+# plots
