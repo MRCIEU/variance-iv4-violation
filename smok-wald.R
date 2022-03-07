@@ -92,41 +92,32 @@ for (i in 1:nrow(iv)){
 lm(forced_expiratory_volume_best_measure.20150.0.0 ~ number_of_cigarettes_previously_smoked_daily.2887.0.0 * smoking_status.20116.0.0 + sex.31.0.0 + age_at_recruitment.21022.0.0, data=dat,family="binomial") %>% summary
 
 # Wald effect of CHRNA3 on lung function
-exposure_dat <- format_data(exp_df %>% dplyr::filter(SNP == "chr15_78806023_t_c"), type="exposure")
-outcome_dat <- format_data(out_df %>% dplyr::filter(SNP == "chr15_78806023_t_c"), type="outcome")
+exposure_dat <- format_data(exp_df %>% dplyr::filter(SNP == "chr15_78806023_T_C"), type="exposure")
+outcome_dat <- format_data(out_df %>% dplyr::filter(SNP == "chr15_78806023_T_C"), type="outcome")
 mr_dat <- harmonise_data(exposure_dat, outcome_dat, action=1)
 wald_res <- mr(mr_dat)
 
 # IVW effect wo CHRNA3 on lung function
-exposure_dat <- format_data(exp_df %>% dplyr::filter(SNP != "chr15_78806023_t_c"), type="exposure")
-outcome_dat <- format_data(out_df %>% dplyr::filter(SNP != "chr15_78806023_t_c"), type="outcome")
+exposure_dat <- format_data(exp_df %>% dplyr::filter(SNP != "chr15_78806023_T_C"), type="exposure")
+outcome_dat <- format_data(out_df %>% dplyr::filter(SNP != "chr15_78806023_T_C"), type="outcome")
 mr_dat <- harmonise_data(exposure_dat, outcome_dat, action=1)
 ivw_res <- mr(mr_dat)
 
+# combine MR estimates
+mr_res <- rbind(wald_res, ivw_res)
+mr_res$lci <- mr_res$b - (1.96 * mr_res$se)
+mr_res$uci <- mr_res$b + (1.96 * mr_res$se)
+mr_res$method <- factor(mr_res$method, levels = rev(c("Wald ratio", "Inverse variance weighted", "Weighted median", "MR Egger", "Simple mode", "Weighted mode")))
+mr_res$IV <- "-CHRNA3"
+mr_res$IV[mr_res$method == "Wald ratio"] <- "+CHRNA3"
+
 # plot
-res_loo$lci <- res_loo$b - (res_loo$se * 1.96)
-res_loo$uci <- res_loo$b + (res_loo$se * 1.96)
-res_loo$delta <- res_loo$b - dplyr::filter(method == "Inverse variance weighted") %>% dplyr::pull(b)
-res_loo$label <- NA
-res_loo$label[res_loo$SNP=="chr15_78806023_t_c"] <- "CHRNA3"
 pdf("smokingh_fev1.pdf")
-ggplot(res_loo, aes(x=-log10(phi_p), y=b, ymin=lci, ymax=uci, label=label)) +
-    geom_point() +
-    labs(x="Instrument-exposure variance test -log10(P)", y="IVW estimate (SD, 95% CI)") +
+ggplot(mr_res, aes(x=method, y=b, ymin=lci, ymax=uci, shape=IV)) +
+    geom_point(size=2) +
+    geom_errorbar(width = .3) +
     coord_flip() +
-    geom_text(nudge_y = 0.025) +
-    geom_hline(yintercept=res %>% dplyr::filter(method == "Inverse variance weighted") %>% dplyr::pull(b)) +
-    theme_classic() +
-    geom_segment(mapping=aes(x=-log10(phi_p), y=res %>% dplyr::filter(method == "Inverse variance weighted") %>% dplyr::pull(b), xend=-log10(phi_p), yend=b)) +
-    geom_rect(
-        inherit.aes = F,
-        alpha = 0.01,
-        fill="#bdbdbd",
-        aes(
-            xmin=-Inf, 
-            xmax=Inf, 
-            ymin=res %>% dplyr::mutate(lci=b-(1.96*se)) %>% dplyr::filter(method == "Inverse variance weighted") %>% dplyr::pull(lci),
-            ymax=res %>% dplyr::mutate(uci=b+(1.96*se)) %>% dplyr::filter(method == "Inverse variance weighted") %>% dplyr::pull(uci)
-        )
-    )
+    labs(x="Method", y="Estimate (SD, 95% CI)") + 
+    geom_hline(yintercept=1, color="grey", linetype = "dashed") +
+    theme_classic()
 dev.off()

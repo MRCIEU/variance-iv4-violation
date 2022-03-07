@@ -65,6 +65,11 @@ get_mr <- function(exp_id, out_id, vgwas, q){
     res$p_var <- p_var
     res$q <- q
 
+    # save instruments to file for paper
+    if (q == 0){
+        write.table(dat, file=paste0(exp_id, "_", out_id, ".txt"), sep="\t", quote=F)
+    }
+
     return(res)
 }
 
