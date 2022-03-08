@@ -10,12 +10,15 @@ set.seed(123)
 n_sim <- 50
 
 r2_u <- 0.05 # U-X main effect variance explained
-or_u <- 0 # U-Y main effect OR
+or_u <- 0.05 # U-Y main effect OR
 or_x <- 0.05 # X-Y main effect OR
-or_xu <- or_x * 0 # X-Y interaction effect half the size of the main effect
+or_xu <- or_x * 0.5 # X-Y interaction effect half the size of the main effect
+# log odds ratio
 lor_u <- log(or_u)
 lor_x <- log(or_x)
 lor_xu <- log(or_xu)
+lor_u <- 0
+lor_xu <- 0
 
 results <- data.frame()
 for (n_obs in 10000){
@@ -52,7 +55,7 @@ for (n_obs in 10000){
                 result$r2_zu <- r2_zu
                 result$lor_xu <- lor_xu
                 result$b_mr <- wald$b
-                result$b <- or_x
+                result$b <- lor_x
                 result$phi <- phi
                 result$bias <- result$b_mr / result$b
 
