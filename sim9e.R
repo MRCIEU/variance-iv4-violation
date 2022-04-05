@@ -8,8 +8,7 @@ n_obs <- 10000
 
 # log OR effects
 b0 <- log(0.5)
-b1 <- log(5) # causal effect of X-Y
-b2 <- log(3) # causal effect of U-Y
+b1 <- log(1.2) # causal effect of X-Y
 
 results <- data.frame()
 for (i in 1:n_sim){

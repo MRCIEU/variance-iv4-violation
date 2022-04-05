@@ -12,6 +12,8 @@
     - Multi-SNP MR simulation
 - pleiotropy
     - Explore the effect of horizonal pleiotropy on IV-exposure variance effects (which does not cause T1E inflation)
+- sim11
+    - Power simulation for binary outcome
 
 ## Phenotypes
 
