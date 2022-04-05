@@ -58,7 +58,7 @@ for (n_obs in c(1000, 10000, 50000)){
 }
 
 # save data
-write.table(file="sim9.txt", results)
+#write.table(file="sim9.txt", results)
 
 # estimate power
 pwr <- results %>% 
