@@ -14,7 +14,7 @@ u_b <- log(1.68) # U-Y main effect (small Cohen d)
 xu_b <- x_b * 0.5 # X*U-Y effect half the size of the main effect
 
 results <- data.frame()
-for (n_obs in c(5000, 10000, 20000, 40000)){
+for (n_obs in c(1250, 2500, 5000, 10000)){
     for (r2_z in seq(0.01, 0.05, 0.01)){ # variance explained by main effect of Z-X
         for (phi in seq(0, 2, 0.5)){ # size of Z-X interaction effect relative to main effect
             if (n_obs == 500 & r2_z == 0.01){
