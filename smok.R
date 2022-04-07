@@ -63,9 +63,12 @@ for (i in 1:nrow(iv)){
     p_int <- fit %>% tidy %>% dplyr::filter(grepl(":",term)) %>% dplyr::pull(p.value)
 
     # IV-outcome
-    fit <- lm(as.formula(paste0("forced_expiratory_volume_best_measure.20150.0.0 ~ ", snp, " + sex.31.0.0 + age_at_recruitment.21022.0.0 + PC1 + PC2 + PC3 + PC4 + PC5 + PC6 + PC7 + PC8 + PC9 + PC10")), data=dat)
-    b_out <- fit %>% tidy %>% dplyr::filter(grepl("chr",term)) %>% dplyr::pull(estimate)
-    se_out <- fit %>% tidy %>% dplyr::filter(grepl("chr",term)) %>% dplyr::pull(std.error)
+    fit_fvc <- lm(as.formula(paste0("forced_vital_capacity_best_measure.20151.0.0 ~ ", snp, " + sex.31.0.0 + age_at_recruitment.21022.0.0 + PC1 + PC2 + PC3 + PC4 + PC5 + PC6 + PC7 + PC8 + PC9 + PC10")), data=dat)
+    b_fvc <- fit_fvc %>% tidy %>% dplyr::filter(grepl("chr",term)) %>% dplyr::pull(estimate)
+    se_fvc <- fit_fvc %>% tidy %>% dplyr::filter(grepl("chr",term)) %>% dplyr::pull(std.error)
+    fit_fev <- lm(as.formula(paste0("forced_expiratory_volume_best_measure.20150.0.0 ~ ", snp, " + sex.31.0.0 + age_at_recruitment.21022.0.0 + PC1 + PC2 + PC3 + PC4 + PC5 + PC6 + PC7 + PC8 + PC9 + PC10")), data=dat)
+    b_fev <- fit_fev %>% tidy %>% dplyr::filter(grepl("chr",term)) %>% dplyr::pull(estimate)
+    se_fev <- fit_fev %>% tidy %>% dplyr::filter(grepl("chr",term)) %>% dplyr::pull(std.error)
 
     exp_df <- rbind(exp_df, data.frame(
         Phenotype="number_of_cigarettes_previously_smoked_daily.2887.0.0",
@@ -78,18 +81,21 @@ for (i in 1:nrow(iv)){
         f_exp, p_int, phi_p=v_exp$phi_p
     ))
     out_df <- rbind(out_df, data.frame(
-        Phenotype="forced_expiratory_volume_best_measure.20150.0.0",
-        SNP=snp, 
-        beta=b_out, 
-        se=se_out,
-        effect_allele=iv$ea[i],
-        other_allele=iv$nea[i],
-        units="SD"
+        Phenotype=c("forced_expiratory_volume_best_measure.20150.0.0", "forced_vital_capacity_best_measure.20151.0.0"),
+        SNP=c(snp, snp),
+        beta=c(b_fev, b_fvc),
+        se=c(se_fev, se_fvc),
+        effect_allele=c(iv$ea[i], iv$ea[i]),
+        other_allele=c(iv$nea[i], iv$nea[i]),
+        units=c("SD", "SD")
     ))
 }
 
+save.image("data/smok.RData")
+
 # check for X-Y effect modification
-lm(forced_expiratory_volume_best_measure.20150.0.0 ~ number_of_cigarettes_previously_smoked_daily.2887.0.0 * smoking_status.20116.0.0 + sex.31.0.0 + age_at_recruitment.21022.0.0, data=dat,family="binomial") %>% summary
+lm(forced_expiratory_volume_best_measure.20150.0.0 ~ number_of_cigarettes_previously_smoked_daily.2887.0.0 * smoking_status.20116.0.0 + sex.31.0.0 + age_at_recruitment.21022.0.0, data=dat) %>% summary
+lm(forced_vital_capacity_best_measure.20151.0.0 ~ number_of_cigarettes_previously_smoked_daily.2887.0.0 * smoking_status.20116.0.0 + sex.31.0.0 + age_at_recruitment.21022.0.0, data=dat) %>% summary
 
 # IV-exp
 exposure_dat <- format_data(exp_df, type="exposure")
@@ -115,7 +121,7 @@ res_loo$uci <- res_loo$b + (res_loo$se * 1.96)
 res_loo$delta <- res_loo$b - dplyr::filter(method == "Inverse variance weighted") %>% dplyr::pull(b)
 res_loo$label <- NA
 res_loo$label[res_loo$SNP=="chr15_78806023_t_c"] <- "CHRNA3"
-pdf("smokingh_fev1.pdf")
+pdf("smokingh.pdf")
 ggplot(res_loo, aes(x=-log10(phi_p), y=b, ymin=lci, ymax=uci, label=label)) +
     geom_point() +
     labs(x="Instrument-exposure variance test -log10(P)", y="IVW estimate (SD, 95% CI)") +
