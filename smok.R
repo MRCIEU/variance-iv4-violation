@@ -91,8 +91,6 @@ for (i in 1:nrow(iv)){
     ))
 }
 
-save.image("data/smok.RData")
-
 # check for X-Y effect modification
 lm(forced_expiratory_volume_best_measure.20150.0.0 ~ number_of_cigarettes_previously_smoked_daily.2887.0.0 * smoking_status.20116.0.0 + sex.31.0.0 + age_at_recruitment.21022.0.0, data=dat) %>% summary
 lm(forced_vital_capacity_best_measure.20151.0.0 ~ number_of_cigarettes_previously_smoked_daily.2887.0.0 * smoking_status.20116.0.0 + sex.31.0.0 + age_at_recruitment.21022.0.0, data=dat) %>% summary

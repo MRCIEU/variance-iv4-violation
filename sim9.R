@@ -16,6 +16,10 @@ results <- data.frame()
 for (n_obs in c(500, 1000, 2000, 4000)){
     for (r2_z in seq(0.01, 0.05, 0.01)){ # variance explained by main effect of Z-X
         for (phi in seq(0, 2, 0.5)){ # size of Z-X interaction effect relative to main effect
+            if (n_obs == 500 & r2_z == 0.01){
+                # these sims have IV-X f-stat < 10
+                next
+            }
             r2_zu <- r2_z * phi
             u_b <- sqrt(r2_u)
             z_b <- sqrt(r2_z)
@@ -34,7 +38,7 @@ for (n_obs in c(500, 1000, 2000, 4000)){
                 iv_out <- lm(y~z)
                 b_exp <- iv_exp %>% tidy %>% dplyr::filter(term=="z") %>% dplyr::pull(estimate)
                 se_exp <- iv_exp %>% tidy %>% dplyr::filter(term=="z") %>% dplyr::pull(std.error)
-                f_stat <- summary(lm(y~x))$fstatistic[1] %>% as.numeric
+                f_stat <- summary(lm(x~z))$fstatistic[1] %>% as.numeric
                 b_out <- iv_out %>% tidy %>% dplyr::filter(term=="z") %>% dplyr::pull(estimate)
                 se_out <- iv_out %>% tidy %>% dplyr::filter(term=="z") %>% dplyr::pull(std.error)
                 wald <- mr_wald_ratio(b_exp, b_out, se_exp, se_out, NULL)

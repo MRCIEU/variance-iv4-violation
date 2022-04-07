@@ -7,16 +7,20 @@ library("viridis")
 source("funs.R")
 set.seed(123)
 
-n_sim <- 50
-r2_u <- 0.05 # U-X main effect
-x_b <- log(1.2) # X-Y main effect
-u_b <- log(1.2) # U-Y main effect
+n_sim <- 30
+r2_u <- 0.05 # U-Y main effect (small Cohen d)
+x_b <- log(1.68) # X-Y main effect (small Cohen d)
+u_b <- log(1.68) # U-Y main effect (small Cohen d)
 xu_b <- x_b * 0.5 # X*U-Y effect half the size of the main effect
 
 results <- data.frame()
-for (n_obs in c(10000, 50000, 100000)){
+for (n_obs in c(5000, 10000, 20000, 40000)){
     for (r2_z in seq(0.01, 0.05, 0.01)){ # variance explained by main effect of Z-X
-        for (phi in seq(0, 2.5, 0.5)){ # size of Z-X interaction effect relative to main effect
+        for (phi in seq(0, 2, 0.5)){ # size of Z-X interaction effect relative to main effect
+            if (n_obs == 500 & r2_z == 0.01){
+                # these sims have IV-X f-stat < 10
+                next
+            }
             r2_zu <- r2_z * phi
             u_b <- sqrt(r2_u)
             z_b <- sqrt(r2_z)
@@ -25,7 +29,7 @@ for (n_obs in c(10000, 50000, 100000)){
                 # simulate variables
                 z <- get_simulated_genotypes(0.25, n_obs); z <- scale(z)
                 u <- rnorm(n_obs)
-                x <- z*z_b + u*u_b + z*u*zu_b + rnorm(n_obs, sd=sqrt(1-(r2_z+r2_u+r2_zu))); x <- scale(x)
+                x <- z*z_b + u*u_b + z*u*zu_b + rnorm(n_obs, sd=sqrt(1-(r2_z+r2_u+r2_zu)))
 
                 # simulate binary outcome
                 p <- x*x_b + u*u_b + x*u*xu_b
@@ -37,6 +41,7 @@ for (n_obs in c(10000, 50000, 100000)){
                 iv_out <- glm(y ~ z, family="binomial")
                 b_exp <- iv_exp %>% tidy %>% dplyr::filter(term=="z") %>% dplyr::pull(estimate)
                 se_exp <- iv_exp %>% tidy %>% dplyr::filter(term=="z") %>% dplyr::pull(std.error)
+                f_stat <- summary(lm(x~z))$fstatistic[1] %>% as.numeric
                 b_out <- iv_out %>% tidy %>% dplyr::filter(term=="z") %>% dplyr::pull(estimate)
                 se_out <- iv_out %>% tidy %>% dplyr::filter(term=="z") %>% dplyr::pull(std.error)
                 wald <- mr_wald_ratio(b_exp, b_out, se_exp, se_out, NULL)
@@ -53,6 +58,8 @@ for (n_obs in c(10000, 50000, 100000)){
                 result$b <- x_b
                 result$phi <- phi
                 result$bias <- result$b_mr / result$b
+                result$f_stat <- f_stat
+                result$varX <- var(x)
 
                 results <- rbind(results, result)
             }
@@ -81,7 +88,6 @@ p <- ggplot(pwr, aes(x=n_obs, y=estimate, ymin=conf.low, ymax=conf.high, color=b
     geom_hline(yintercept = 0.8, linetype = "dashed", color = "grey") +
     geom_hline(yintercept = 0.05, linetype = "dashed", color = "grey") +
     scale_color_viridis(direction = 1) +
-    scale_x_discrete(labels = c('10,000','50,000','100,000')) +
     facet_grid(phi~r2_z) +
     ggtitle("Instrument-exposure main effect variance explained") +
     theme(
