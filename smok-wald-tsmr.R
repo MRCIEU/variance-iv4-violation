@@ -18,9 +18,10 @@ nochrna3_dat <- harmonise_data(nochrna3_exp, nochrna3_out)
 # Perform MR
 chrna3_res <- mr(chrna3_dat)
 nochrna3_res <- mr(nochrna3_dat)
+nochrna3_het <- mr_heterogeneity(nochrna3_dat)
 
 # merge tables
-ivw <- nochrna3_res %>% dplyr::filter(method == "Inverse variance weighted")
+ivw <- nochrna3_res %>% dplyr::filter(method == "Weighted median")
 wald <- chrna3_res
 dat <- rbind(ivw, wald)
 dat$lci <- dat$b - (1.96 * dat$se)
