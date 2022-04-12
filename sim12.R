@@ -14,26 +14,29 @@ r2_xu <- r2_x * 0.5 # X-Y interaction effect half the size of the main effect
 n_snps <- 20 # number of SNPs for use as IVs in MR
 n_isnps <- 5 # number of IVs with interaction effects on X
 r2_z <- 0.05 # combined variance explained by the IV
-r2_zu <- (r2_z/n_snps)*.5 # interaction effect size relative to main effect
+phi <- 0.5 # interaction effect size relative to main effect
 p_thresh <- 0.05 / n_snps
-
-# betas
-z_b <- sqrt(r2_z / n_snps)
-zu_b <- sqrt(r2_zu / n_isnps)
 x_b <- sqrt(r2_x)
 u_b <- sqrt(r2_u)
 xu_b <- sqrt(r2_xu)
+f_min <- 10
 
 results <- data.frame()
 for (n_obs in c(1000,10000,100000)){
     for (i in 1:n_sim){
+        # select SNP betas
+        z_b <- rnorm(10000, sd=0.025)
+        
+        # set size of interaction effect relative to main effect
+        zu_b <- z_b * phi
+
         # simulate variables
-        q <- runif(n_snps, min = 0.05, max = 0.5) # alternative allele frequency
-        q_zu <- sample(c(rep(1, n_isnps), rep(0, n_snps-n_isnps))) # IVs that have interactions
-        z <- sapply(q, function(q) get_simulated_genotypes(q, n_obs)); z <- scale(z) # instrument
+        z <- sapply(1:n_snps, function(j) get_simulated_genotypes(0.25, n_obs)); z <- scale(z) # instruments
         u <- rnorm(n_obs) # modifier
-        x <- sapply(1:n_obs, function(i) sum(z[i,]*z_b)) + u*u_b + sapply(1:n_obs, function(i) sum(z[i,]*q_zu*u[i]*zu_b)) + rnorm(n_obs, sd=sqrt(1-(r2_z+r2_u+r2_zu))) # exposure
-        y <- x*x_b + u*u_b + x*u*xu_b + rnorm(n_obs, sd=sqrt(1-(r2_x+r2_u+r2_xu)))
+        x <- sapply(1:n_obs, function(j) sum(z[j,]*z_b)) + u*u_b + sapply(1:n_obs, function(j) sum(z[j,1:n_isnps]*u[j]*zu_b[1:n_isnps])) + rnorm(n_obs, sd=sqrt(1-(sum(z_b^2) + u_b^2 + sum(zu_b[1:n_isnps]^2)))) # exposure
+        y <- x*x_b + u*u_b + x*u*xu_b + rnorm(n_obs, sd=sqrt(1-(r2_x+r2_u+r2_xu))) # outcome
+        varX <- var(x)
+        varY <- var(y)
 
         # SNP estimates
         b_exp <- sapply(1:n_snps, function(i) lm(x~z[,i]) %>% tidy %>% dplyr::filter(term!="(Intercept)") %>% dplyr::pull(estimate))
@@ -58,40 +61,6 @@ for (n_obs in c(1000,10000,100000)){
         mr_homo_p <- mr_homo$pval
 
         # store result
-        results <- rbind(data.frame(mr_all_b,mr_all_p,mr_homo_b,mr_homo_p,n_obs), results)
+        results <- rbind(cbind(t.test(f_stat) %>% tidy, data.frame(varX, varY, mr_all_b,mr_all_p,mr_homo_b,mr_homo_p,n_obs)), results)
     }
 }
-
-# bias
-est <- rbind(
-    t.test(results$mr_all_b) %>% tidy %>% dplyr::mutate(iv="All"),
-    t.test(results$mr_homo_b) %>% tidy %>% dplyr::mutate(iv="Brown-Forsythe test P > 0.05")
-)
-est <- as.data.frame(est)
-est$iv <- as.factor(est$iv)
-levels(est$iv) <- rev(levels(est$iv))
-
-# power
-pwr <- rbind(
-    binom.test(sum(results$mr_all_p < 0.05), n_sim) %>% tidy %>% dplyr::mutate(iv="All"),
-    binom.test(sum(results$mr_homo_p < 0.05), n_sim) %>% tidy %>% dplyr::mutate(iv="Brown-Forsythe test P > 0.05")
-)
-pwr <- as.data.frame(pwr)
-pwr$iv <- as.factor(pwr$iv)
-levels(pwr$iv) <- rev(levels(pwr$iv))
-
-# plot bias
-pdf("sim10.pdf", height=3)
-ggplot(est, aes(x=iv, y=estimate, ymin=conf.low, ymax=conf.high)) +
-    geom_point(size=2, position=position_dodge(width = .5)) +
-    geom_errorbar(width = .3, position=position_dodge(width = .5)) +
-    coord_flip() +
-    labs(x="Instruments", y="Estimate (SD, 95% CI)", shape="Outcome") + 
-    geom_hline(yintercept=x_b, color="grey", linetype = "dashed") +
-    theme_classic() +
-    theme(
-        legend.position = "bottom",
-        legend.background = element_blank(),
-        legend.box.background = element_rect(colour = "black")
-    )
-dev.off()

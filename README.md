@@ -9,11 +9,13 @@
 - sim9 
     - Power simulation for continuous outcome
 - sim10
-    - Multi-SNP MR simulation
+    - Multi-SNP MR simulation with constant IV-exposure effect
 - pleiotropy
     - Explore the effect of horizonal pleiotropy on IV-exposure variance effects (which does not cause T1E inflation)
 - sim11
     - Power simulation for binary outcome
+- sim12
+    - Multi-SNP MR simulation with varying IV-exposure effect
 
 ## Phenotypes
 
