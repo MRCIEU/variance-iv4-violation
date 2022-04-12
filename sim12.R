@@ -29,7 +29,7 @@ mr <- function(b_exp, b_out, se_exp, se_out, phi_p, f, q){
     return(ivw)
 }
 
-n_obs <- 10000
+n_obs <- 100000
 n_sim <- 30
 r2_u <- 0.2 # U-Y main effect (small Cohen d)
 r2_x <- 0.2 # X-Y main effect (small Cohen d)
@@ -47,8 +47,7 @@ results <- data.frame()
 f_stats <- data.frame()
 for (i in 1:n_sim){
     # select SNP betas
-    z_b <- rnorm(100000, sd=0.025)
-    z_b <- sample(z_b[abs(z_b) > 0.02], n_snps)
+    z_b <- runif(n_snps, min = 0.01, max = 0.05)
     
     # set size of interaction effect relative to main effect
     zu_b <- z_b * phi
@@ -77,9 +76,6 @@ for (i in 1:n_sim){
     results <- rbind(results, mr(b_exp, b_out, se_exp, se_out, phi_p, f_stat, 0.05))
     results <- rbind(results, mr(b_exp, b_out, se_exp, se_out, phi_p, f_stat, 0))
 }
-
-# check f_stats of main effects
-f_stats %>% dplyr::summarize(t.test(f_stat) %>% tidy)
 
 # plot bias
 bias <- results %>% dplyr::group_by(q) %>% dplyr::summarize(t.test(b) %>% tidy)
