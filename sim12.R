@@ -19,13 +19,12 @@ p_thresh <- 0.05 / n_snps
 x_b <- sqrt(r2_x)
 u_b <- sqrt(r2_u)
 xu_b <- sqrt(r2_xu)
-f_min <- 10
 
 results <- data.frame()
 for (n_obs in c(1000,10000,100000)){
     for (i in 1:n_sim){
         # select SNP betas
-        z_b <- rnorm(10000, sd=0.025)
+        z_b <- rnorm(n_snps, sd=0.025) # TODO drawn from F>10 pop
         
         # set size of interaction effect relative to main effect
         zu_b <- z_b * phi
