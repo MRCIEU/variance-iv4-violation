@@ -29,16 +29,15 @@ mr <- function(b_exp, b_out, se_exp, se_out, phi_p, f, q){
     return(ivw)
 }
 
-n_obs <- 100000
+n_obs <- 10000
 n_sim <- 50
 r2_u <- 0.2 # U-Y main effect (small Cohen d)
 r2_x <- 0.2 # X-Y main effect (small Cohen d)
 r2_xu <- r2_x * 0.5 # X-Y interaction effect half the size of the main effect
-n_snps <- 20 # number of SNPs for use as IVs in MR
+n_snps <- 10 # number of SNPs for use as IVs in MR
 n_isnps <- 5 # number of IVs with interaction effects on X
 r2_z <- 0.05 # combined variance explained by the IV
 phi <- 0.5 # interaction effect size relative to main effect
-p_thresh <- 0.05 / n_snps
 x_b <- sqrt(r2_x)
 u_b <- sqrt(r2_u)
 xu_b <- sqrt(r2_xu)
@@ -77,7 +76,7 @@ for (i in 1:n_sim){
 }
 
 # plot bias
-bias <- results %>% dplyr::group_by(q) %>% dplyr::summarize(t.test(b) %>% tidy)
+bias <- results %>% dplyr::group_by(q) %>% dplyr::summarize(t.test(b, mu=x_b) %>% tidy)
 bias$q <- factor(bias$q)
 bias$q <- factor(bias$q, levels = rev(levels(bias$q)))
 #pdf("cont.pdf")
