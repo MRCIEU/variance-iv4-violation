@@ -7,7 +7,7 @@ library("viridis")
 source("funs.R")
 set.seed(123)
 
-n_sim <- 5
+n_sim <- 30
 r2_u <- 0.2 # U-Y main effect (small Cohen d)
 r2_x <- 0.2 # X-Y main effect (small Cohen d)
 r2_xu <- r2_x * 0.5 # X-Y interaction effect half the size of the main effect
@@ -21,10 +21,19 @@ u_b <- sqrt(r2_u)
 xu_b <- sqrt(r2_xu)
 
 results <- data.frame()
-for (n_obs in c(1000,10000,100000)){
+for (n_obs in c(5000,10000,100000)){
     for (i in 1:n_sim){
         # select SNP betas
-        z_b <- rnorm(n_snps, sd=0.025) # TODO drawn from F>10 pop
+        if (n_obs == 5000){
+            z_b <- rnorm(100000, sd=0.025)
+            z_b <- sample(z_b[abs(z_b) > 0.08], n_snps)
+        } else if (n_obs == 10000){
+            z_b <- rnorm(100000, sd=0.025)
+            z_b <- sample(z_b[abs(z_b) > 0.06], n_snps)
+        } else if (n_obs == 100000){
+            z_b <- rnorm(100000, sd=0.025)
+            z_b <- sample(z_b[abs(z_b) > 0.02], n_snps)
+        }
         
         # set size of interaction effect relative to main effect
         zu_b <- z_b * phi
@@ -60,6 +69,6 @@ for (n_obs in c(1000,10000,100000)){
         mr_homo_p <- mr_homo$pval
 
         # store result
-        results <- rbind(cbind(t.test(f_stat) %>% tidy, data.frame(varX, varY, mr_all_b,mr_all_p,mr_homo_b,mr_homo_p,n_obs)), results)
+        results <- rbind(data.frame(varX, varY, mr_all_b,mr_all_p,mr_homo_b,mr_homo_p,n_obs,min_f=min(f_stat)), results)
     }
 }

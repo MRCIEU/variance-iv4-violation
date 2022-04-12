@@ -16,6 +16,8 @@
     - Power simulation for binary outcome
 - sim12
     - Multi-SNP MR simulation with varying IV-exposure effect
+- sim13
+    - setting F-stat = 10
 
 ## Phenotypes
 
