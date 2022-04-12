@@ -30,7 +30,7 @@ mr <- function(b_exp, b_out, se_exp, se_out, phi_p, f, q){
 }
 
 n_obs <- 100000
-n_sim <- 30
+n_sim <- 50
 r2_u <- 0.2 # U-Y main effect (small Cohen d)
 r2_x <- 0.2 # X-Y main effect (small Cohen d)
 r2_xu <- r2_x * 0.5 # X-Y interaction effect half the size of the main effect
@@ -44,7 +44,6 @@ u_b <- sqrt(r2_u)
 xu_b <- sqrt(r2_xu)
 
 results <- data.frame()
-f_stats <- data.frame()
 for (i in 1:n_sim){
     # select SNP betas
     z_b <- runif(n_snps, min = 0.01, max = 0.05)
