@@ -5,7 +5,7 @@ library("viridis")
 source("funs.R")
 set.seed(123)
 
-n_sim <- 30
+n_sim <- 200
 n_obs <- 10000
 
 # variance explained

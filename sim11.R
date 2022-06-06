@@ -7,32 +7,28 @@ library("viridis")
 source("funs.R")
 set.seed(123)
 
-n_sim <- 30
-r2_u <- 0.05 # U-Y main effect (small Cohen d)
-x_b <- log(1.68) # X-Y main effect (small Cohen d)
-u_b <- log(1.68) # U-Y main effect (small Cohen d)
+n_sim <- 200
+r2_ux <- 0.2 # U-X main effect (small Cohen d)
+x_b <- log(1.1) # X-Y main effect
+uy_b <- log(1.1) # U-Y main effect
 xu_b <- x_b * 0.5 # X*U-Y effect half the size of the main effect
 
 results <- data.frame()
-for (n_obs in c(1250, 2500, 5000, 10000)){
+for (n_obs in c(2000, 4000, 6000, 12000)){
     for (r2_z in seq(0.01, 0.05, 0.01)){ # variance explained by main effect of Z-X
         for (phi in seq(0, 2, 0.5)){ # size of Z-X interaction effect relative to main effect
-            if (n_obs == 500 & r2_z == 0.01){
-                # these sims have IV-X f-stat < 10
-                next
-            }
             r2_zu <- r2_z * phi
-            u_b <- sqrt(r2_u)
+            ux_b <- sqrt(r2_ux)
             z_b <- sqrt(r2_z)
             zu_b <- sqrt(r2_zu)
             for (i in 1:n_sim){
                 # simulate variables
                 z <- get_simulated_genotypes(0.25, n_obs); z <- scale(z)
                 u <- rnorm(n_obs)
-                x <- z*z_b + u*u_b + z*u*zu_b + rnorm(n_obs, sd=sqrt(1-(r2_z+r2_u+r2_zu)))
+                x <- z*z_b + u*ux_b + z*u*zu_b + rnorm(n_obs, sd=sqrt(1-(r2_z+r2_ux+r2_zu)))
 
                 # simulate binary outcome
-                p <- x*x_b + u*u_b + x*u*xu_b
+                p <- x*x_b + u*uy_b + x*u*xu_b
                 p <- 1/(1+exp(-p))
                 y <- rbinom(n_obs, 1, p)
 
@@ -73,7 +69,7 @@ for (n_obs in c(1250, 2500, 5000, 10000)){
 # estimate power
 pwr <- results %>% 
     dplyr::group_by(n_obs, r2_z, phi) %>% 
-    dplyr::summarize(cbind(binom.test(sum(phi_p < 0.05), n()) %>% tidy, bias=median(bias))) %>%
+    dplyr::summarize(cbind(binom.test(sum(phi_p < 0.05), n()) %>% tidy, bias=mean(bias), f_stat=mean(f_stat))) %>%
     as.data.frame
 
 # plot

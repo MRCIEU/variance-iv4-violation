@@ -25,7 +25,7 @@ mr <- function(b_exp, b_out, se_exp, se_out, phi_p, q){
 }
 
 n_obs <- 100000
-n_sim <- 50
+n_sim <- 200
 r2_u <- 0.2 # U-Y main effect (small Cohen d)
 r2_x <- 0.2 # X-Y main effect (small Cohen d)
 r2_xu <- r2_x * 0.5 # X-Y interaction effect half the size of the main effect
@@ -76,7 +76,7 @@ for (i in 1:n_sim){
 # plot bias and efficiency
 bias <- results %>% dplyr::group_by(q) %>% dplyr::summarize(t.test(b) %>% tidy) %>% dplyr::mutate(estimand="b")
 bias$yintercept <- x_b
-efficiency <- results %>% dplyr::group_by(q) %>% dplyr::mutate(pval=-log10(pval)) %>% dplyr::summarize(t.test(pval) %>% tidy) %>% dplyr::mutate(estimand="p")
+efficiency <- results %>% dplyr::group_by(q) %>% dplyr::summarize(t.test(se) %>% tidy) %>% dplyr::mutate(estimand="se")
 efficiency$yintercept <- NA
 s <- rbind(bias, efficiency)
 s$q <- as.character(s$q)
@@ -89,7 +89,7 @@ ggplot(s, aes(x=q, y=estimate, ymin=conf.low, ymax=conf.high)) +
     geom_errorbar(width=0.3) +
     coord_flip() +
     geom_hline(data=s, aes(yintercept = yintercept), linetype="dashed", color="grey") +
-    facet_grid(. ~ estimand, scales="free", switch = 'x', labeller = as_labeller(c(b="SD (95% CI)", p="-log10(P) (95% CI)"))) +
+    facet_grid(. ~ estimand, scales="free", switch = 'x', labeller = as_labeller(c(b="SD (95% CI)", se="SE (95% CI)"))) +
     labs(x="Proportion of top instrument-variance effects removed") +
     theme_classic() +
     theme(

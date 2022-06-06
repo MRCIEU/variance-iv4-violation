@@ -7,7 +7,7 @@ library("viridis")
 source("funs.R")
 set.seed(123)
 
-n_sim <- 30
+n_sim <- 200
 r2_u <- 0.2 # U-Y main effect (small Cohen d)
 r2_x <- 0.2 # X-Y main effect (small Cohen d)
 r2_xu <- r2_x * 0.5 # X-Y interaction effect half the size of the main effect
