@@ -3,7 +3,7 @@ library("ieugwasr")
 library("ggplot2")
 library("viridis")
 source("funs.R")
-options(ieugwasr_api="http://64.227.44.193:8006/")
+#options(ieugwasr_api="http://64.227.44.193:8006/")
 set.seed(123)
 
 get_mr <- function(exp_id, out_id, vgwas, q){
@@ -98,16 +98,11 @@ wrapper <- function(vgwas, exp_id, out_id, label, or=T){
     return(mr)
 }
 
-cigarettes_per_day <- read.table("data/number_of_cigarettes_previously_smoked_daily.2887.0.0_iv_variance.txt")
 ldl_vgwas <- get_variants("ldl_direct.30780.0.0")
-#hba1c_vgwas <- get_variants("glycated_haemoglobin.30750.0.0")
 glucose_vgwas <- get_variants("glucose.30740.0.0")
 urate_vgwas <- get_variants("urate.30880.0.0")
 
-fev1 <- wrapper(cigarettes_per_day, "ieu-b-25", "ukb-b-19657", "Smoking heaviness-FEV1", or=F)
-fvc <- wrapper(cigarettes_per_day, "ieu-b-25", "ukb-b-7953", "Smoking heaviness-FVC", or=F)
 ldl <- wrapper(ldl_vgwas, "ukb-d-30780_irnt", "ieu-a-7", "LDL-CAD")
-#hba1c <- wrapper(hba1c_vgwas, "ukb-d-30750_irnt", "ieu-a-24", "HbA1c-T2DM")
 glucose <- wrapper(glucose_vgwas, "ukb-d-30740_irnt", "ieu-a-24", "Glucose-T2DM")
 urate <- wrapper(urate_vgwas, "ukb-d-30880_irnt", "ieu-a-1055", "Urate-Gout")
 results <- rbind(fev1, fvc, ldl, glucose, urate)

@@ -7,14 +7,14 @@ library("viridis")
 source("funs.R")
 set.seed(123)
 
-n_sim <- 200
+n_sim <- 500
 r2_ux <- 0.2 # U-X main effect (small Cohen d)
 x_b <- log(1.1) # X-Y main effect
 uy_b <- log(1.1) # U-Y main effect
 xu_b <- x_b * 0.5 # X*U-Y effect half the size of the main effect
 
 results <- data.frame()
-for (n_obs in c(2000, 4000, 6000, 8000)){
+for (n_obs in c(1000, 2000, 4000, 6000)){
     for (r2_z in seq(0.01, 0.05, 0.01)){ # variance explained by main effect of Z-X
         for (phi in seq(0, 2, 0.5)){ # size of Z-X interaction effect relative to main effect
             r2_zu <- r2_z * phi

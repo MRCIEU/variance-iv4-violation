@@ -25,7 +25,7 @@ mr <- function(b_exp, b_out, se_exp, se_out, phi_p, q){
 }
 
 n_obs <- 100000
-n_sim <- 200
+n_sim <- 500
 r2_u <- 0.2 # U-Y main effect (small Cohen d)
 r2_x <- 0.2 # X-Y main effect (small Cohen d)
 r2_xu <- r2_x * 0.5 # X-Y interaction effect half the size of the main effect
