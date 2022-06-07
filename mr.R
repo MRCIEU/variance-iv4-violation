@@ -112,7 +112,7 @@ ggplot(results, aes(x=q, y=b, ymin=lci, ymax=uci, color=-log10(w_all_diff))) +
     geom_errorbar(width=0.3) +
     coord_flip() +
     geom_hline(yintercept=1, linetype="dashed", color="grey") +
-    labs(y="OR (95% CI)", x="Proportion of top instrument-variance effects removed", color="Mann-Whitney test F-statistic for weak instrument bias") +
+    labs(y="OR (95% CI)", x="Proportion of top instrument-variance effects removed", color="Mann-Whitney test -log10(P) for weak instrument bias") +
     theme_classic() +
     facet_grid(~trait, scales="free_x") +
     theme(
@@ -124,3 +124,5 @@ ggplot(results, aes(x=q, y=b, ymin=lci, ymax=uci, color=-log10(w_all_diff))) +
         panel.spacing = unit(1, "lines")
     )
 dev.off()
+
+save.image(file = "data/mr.RData")
