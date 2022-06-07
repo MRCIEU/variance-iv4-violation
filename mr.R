@@ -28,25 +28,18 @@ get_mr <- function(exp_id, out_id, vgwas, q){
     p_var <- quantile(exposure_dat$phi_p, q)
 
     # Drop top q SNPs with IV-exp variance effect & record IV-exp P-dist to test for enrichment
-    p_keep <- exposure_dat %>% dplyr::filter(phi_p >= !!p_var) %>% dplyr::pull(pval.exposure)
-    p_drop <- exposure_dat %>% dplyr::filter(phi_p < !!p_var) %>% dplyr::pull(pval.exposure)
+    f_keep <- exposure_dat %>% dplyr::filter(phi_p >= !!p_var) %>% dplyr::pull(F.exposure)
+    f_drop <- exposure_dat %>% dplyr::filter(phi_p < !!p_var) %>% dplyr::pull(F.exposure)
     f_all <- exposure_dat$F.exposure
     exposure_dat <- exposure_dat %>% dplyr::filter(phi_p >= !!p_var)
     f_mean <- wilcox.test(exposure_dat$F.exposure, conf.int=T, exact = FALSE) %>% tidy
 
-    # Test for enrichment of IV-exp assocition using t-test
-    t_all_diff <- t.test(x=f_all, y=p_keep, paired=F, var.equal=F) %>% tidy %>% dplyr::pull(p.value)
-    if (q == 0){
-        t_diff <- NA
-    } else {
-        t_diff <- t.test(x=p_drop, y=p_keep, paired=F, var.equal=F) %>% tidy %>% dplyr::pull(p.value)
-    }
     # Test for enrichment of IV-exp assocition using Mann Whitney U test
-    w_all_diff <- wilcox.test(x=p_all, y=p_keep, exact = FALSE) %>% tidy %>% dplyr::pull(p.value)
+    w_all_diff <- wilcox.test(x=f_all, y=f_keep, exact = FALSE) %>% tidy %>% dplyr::pull(p.value)
     if (q == 0){
         w_diff <- NA
     } else {
-        w_diff <- wilcox.test(x=p_drop, y=p_keep, exact = FALSE) %>% tidy %>% dplyr::pull(p.value)
+        w_diff <- wilcox.test(x=f_drop, y=f_keep, exact = FALSE) %>% tidy %>% dplyr::pull(p.value)
     }
 
     # Get effects of instruments on outcome
@@ -61,11 +54,9 @@ get_mr <- function(exp_id, out_id, vgwas, q){
     res <- mr(dat, method_list=c("mr_ivw"))
     
     # store results
-    res$p_mean <- p_mean$estimate
-    res$p_mean_l <- p_mean$conf.low
-    res$p_mean_h <- p_mean$conf.high
-    res$t_all_diff <- t_all_diff
-    res$t_diff <- t_diff
+    res$f_mean <- f_mean$estimate
+    res$f_mean_l <- f_mean$conf.low
+    res$f_mean_h <- f_mean$conf.high
     res$w_all_diff <- w_all_diff
     res$w_diff <- w_diff
     res$p_var <- p_var
@@ -111,7 +102,7 @@ urate_vgwas <- get_variants("urate.30880.0.0")
 ldl <- wrapper(ldl_vgwas, "ukb-d-30780_irnt", "ieu-a-7", "LDL-CAD")
 glucose <- wrapper(glucose_vgwas, "ukb-d-30740_irnt", "ieu-a-24", "Glucose-T2DM")
 urate <- wrapper(urate_vgwas, "ukb-d-30880_irnt", "ieu-a-1055", "Urate-Gout")
-results <- rbind(fev1, fvc, ldl, glucose, urate)
+results <- rbind(ldl, glucose, urate)
 
 # plot binary outcomes
 pdf("binary.pdf")
@@ -121,28 +112,7 @@ ggplot(results, aes(x=q, y=b, ymin=lci, ymax=uci, color=-log10(w_all_diff))) +
     geom_errorbar(width=0.3) +
     coord_flip() +
     geom_hline(yintercept=1, linetype="dashed", color="grey") +
-    labs(y="OR (95% CI)", x="Proportion of top instrument-variance effects removed", color="Mann-Whitney test -log10(P) for weak instrument bias") +
-    theme_classic() +
-    facet_grid(~trait, scales="free_x") +
-    theme(
-        strip.background = element_blank(),
-        strip.text.y = element_text(angle = 0),
-        legend.position = "bottom",
-        legend.background = element_blank(),
-        legend.box.background = element_rect(colour = "black"),
-        panel.spacing = unit(1, "lines")
-    )
-dev.off()
-
-# plot continuous outcomes
-pdf("cont.pdf")
-results$q <- factor(results$q, levels = rev(levels(results$q)))
-ggplot(results, aes(x=q, y=b, ymin=lci, ymax=uci, color=-log10(w_all_diff))) +
-    geom_point() +
-    geom_errorbar(width=0.3) +
-    coord_flip() +
-    geom_hline(yintercept=0, linetype="dashed", color="grey") +
-    labs(y="SD (95% CI)", x="Proportion of top instrument-variance effects removed", color="Mann-Whitney test -log10(P) for weak instrument bias") +
+    labs(y="OR (95% CI)", x="Proportion of top instrument-variance effects removed", color="Mann-Whitney test F-statistic for weak instrument bias") +
     theme_classic() +
     facet_grid(~trait, scales="free_x") +
     theme(
