@@ -3,7 +3,7 @@ library("ieugwasr")
 library("ggplot2")
 library("viridis")
 source("funs.R")
-#options(ieugwasr_api="http://64.227.44.193:8006/")
+options(ieugwasr_api="http://104.248.164.99/")
 set.seed(123)
 
 get_mr <- function(exp_id, out_id, vgwas, q){
@@ -11,10 +11,10 @@ get_mr <- function(exp_id, out_id, vgwas, q){
     exposure_dat <- extract_instruments(exp_id)
 
     # add R^2
-    exposure_dat$r2 <- get_r2()
+    exposure_dat$r2.exposure <- sapply(1:nrow(exposure_dat), function(k) get_r2(exposure_dat$beta.exposure[k], exposure_dat$se.exposure[k], exposure_dat$eaf.exposure[k], exposure_dat$samplesize.exposure[k]))
 
     # add F-stat
-    exposure_dat$F <- get_f()
+    exposure_dat$F.exposure <- sapply(1:nrow(exposure_dat), function(k) get_f(exposure_dat$r2[k], exposure_dat$samplesize.exposure[k], 1))
 
     # Merge instruments with vQTL P
     exposure_dat <- merge(
@@ -30,12 +30,12 @@ get_mr <- function(exp_id, out_id, vgwas, q){
     # Drop top q SNPs with IV-exp variance effect & record IV-exp P-dist to test for enrichment
     p_keep <- exposure_dat %>% dplyr::filter(phi_p >= !!p_var) %>% dplyr::pull(pval.exposure)
     p_drop <- exposure_dat %>% dplyr::filter(phi_p < !!p_var) %>% dplyr::pull(pval.exposure)
-    p_all <- exposure_dat$pval.exposure
+    f_all <- exposure_dat$F.exposure
     exposure_dat <- exposure_dat %>% dplyr::filter(phi_p >= !!p_var)
-    p_mean <- wilcox.test(-log10(exposure_dat$pval.exposure), conf.int=T, exact = FALSE) %>% tidy
+    f_mean <- wilcox.test(exposure_dat$F.exposure, conf.int=T, exact = FALSE) %>% tidy
 
     # Test for enrichment of IV-exp assocition using t-test
-    t_all_diff <- t.test(x=p_all, y=p_keep, paired=F, var.equal=F) %>% tidy %>% dplyr::pull(p.value)
+    t_all_diff <- t.test(x=f_all, y=p_keep, paired=F, var.equal=F) %>% tidy %>% dplyr::pull(p.value)
     if (q == 0){
         t_diff <- NA
     } else {
