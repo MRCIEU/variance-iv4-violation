@@ -288,3 +288,14 @@ get_variants <- function(trait, chrs=seq(1,22)){
 
     return(data)
 }
+
+get_r2 <- function(b, se, eaf, n){
+    r2 <- 2*b^2*(eaf)*(1-eaf)/ (2*b^2*(eaf)*(1-eaf) + (se)^2*2*n*eaf*(1-eaf))
+    return(r2)
+}
+
+# n_snps = number of snps in the model. 1=univariable; n=multivarible
+get_f <- function(r2, n, n_snps){
+    f <- r2*(n-1-n_snps)/((1- r2)*n_snps)
+    return(f)
+}

@@ -10,6 +10,12 @@ get_mr <- function(exp_id, out_id, vgwas, q){
     # Get instruments
     exposure_dat <- extract_instruments(exp_id)
 
+    # add R^2
+    exposure_dat$r2 <- get_r2()
+
+    # add F-stat
+    exposure_dat$F <- get_f()
+
     # Merge instruments with vQTL P
     exposure_dat <- merge(
         exposure_dat,
