@@ -25,7 +25,7 @@ for (r2_zu in seq(0, 0.1, 0.02)){
             x_b <- sqrt(r2_x)
 
             # simulate variables
-            z <- get_simulated_genotypes(0.25, n_obs); z <- scale(z)
+            z <- rbinom(n_obs, 1, .5); z <- scale(z)
             u <- rnorm(n_obs)
             x <- z*z_b + u*u_b + z*u*zu_b + rnorm(n_obs, sd=sqrt(1-(r2_z+r2_u+r2_zu)))
             y <- x*x_b + u*u_b + x*u*xu_b + rnorm(n_obs, sd=sqrt(1-(r2_x+r2_u+r2_xu)))
