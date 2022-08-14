@@ -89,7 +89,7 @@ ggplot(s, aes(x=q, y=estimate, ymin=conf.low, ymax=conf.high)) +
     geom_errorbar(width=0.3) +
     coord_flip() +
     geom_hline(data=s, aes(yintercept = yintercept), linetype="dashed", color="grey") +
-    facet_grid(. ~ estimand, scales="free", switch = 'x', labeller = as_labeller(c(b="SD (95% CI)", se="SE (95% CI)"))) +
+    facet_grid(. ~ estimand, scales="free", switch = 'x', labeller = as_labeller(c(b="Effect estimate (95% CI)", se="Effect standard error (95% CI)"))) +
     labs(x="Proportion of top instrument-variance effects removed") +
     theme_classic() +
     theme(

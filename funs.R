@@ -1,6 +1,6 @@
 library("dplyr")
 library("broom")
-library("varGWASR")
+#library("varGWASR")
 
 #' Function to simulate genotypes in HWE
 #' @param q Recessive/alternative allele frequency
